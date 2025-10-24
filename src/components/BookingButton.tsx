@@ -29,20 +29,20 @@ export default function BookingButton({ label, disabled, onPress, style }: Props
       bounciness: 6,
     }).start();
 
-  return (
-    <Animated.View style={{ transform: [{ scale }] }}>
-      <Pressable
-        onPress={onPress}
-        onPressIn={pressIn}
-        onPressOut={pressOut}
-        android_ripple={{ color: "rgba(255,255,255,0.2)" }}
-        style={[s.btn, disabled && s.disabled, style]}
-        disabled={disabled}
-      >
-        <Text style={s.text}>{label}</Text>
-      </Pressable>
-    </Animated.View>
-  );
+ return (
+  <Animated.View style={[style, { transform: [{ scale }] }]}>
+    <Pressable
+      onPress={onPress}
+      onPressIn={pressIn}
+      onPressOut={pressOut}
+      android_ripple={{ color: "rgba(255,255,255,0.2)" }}
+      style={[s.btn, disabled && s.disabled]} // لا تمرر style هنا
+      disabled={disabled}
+    >
+      <Text style={s.text}>{label}</Text>
+    </Pressable>
+  </Animated.View>
+);
 }
 
 const s = StyleSheet.create({
