@@ -1,12 +1,11 @@
-// src/components/DurationPicker.tsx
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 
 type Props = {
-  hours: number | null;                 // يبدأ من 1h
+  hours: number | null;                
   onChange: (h: number) => void;
-  step?: number;                        // الافتراضي 1h
-  min?: number;                         // الافتراضي 1h
+  step?: number;                      
+  min?: number;                    
 };
 
 export default function DurationPicker({ hours, onChange, step = 1, min = 1 }: Props) {
@@ -31,7 +30,6 @@ export default function DurationPicker({ hours, onChange, step = 1, min = 1 }: P
           <Text style={s.btnTxt}>+</Text>
         </TouchableOpacity>
       </View>
-      <Text style={s.hint}>No upper limit. Increase as needed.</Text>
     </View>
   );
 }
@@ -64,5 +62,4 @@ const s = StyleSheet.create({
     backgroundColor: "#fff",
   },
   valueTxt: { fontSize: 18, fontWeight: "800", color: "#0b1220" },
-  hint: { marginTop: 6, fontSize: 12, color: "#64748b", fontWeight: "600" },
 });

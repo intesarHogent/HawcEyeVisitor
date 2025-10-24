@@ -1,6 +1,5 @@
 export type ResourceType = "room" | "car" | "parking";
 
-// نافذة حجز موحّدة لكل الموارد
 export type BookingWindow = { from: string; to: string };
 
 export type Base = {
@@ -10,14 +9,14 @@ export type Base = {
   location?: string;
   image?: string;
   description?: string;
-  pricePerHour: number;          // جديد
+  pricePerHour: number;      
 };
 
 export type RoomResource = Base & {
   type: "room";
   capacity?: number;
   equipment?: string[];
-  bookings?: BookingWindow[];    // موحّد
+  bookings?: BookingWindow[];   
 };
 
 export type CarResource = Base & {
@@ -26,14 +25,14 @@ export type CarResource = Base & {
   fuel?: string;
   rangeKm?: number;
   lastService?: string;
-  bookings?: BookingWindow[];    // موحّد
+  bookings?: BookingWindow[];   
 };
 
 export type ParkingResource = Base & {
   type: "parking";
   covered?: boolean;
   evCharger?: boolean;
-  bookings?: BookingWindow[];    // موحّد
+  bookings?: BookingWindow[];    
 };
 
 export type Resource = RoomResource | CarResource | ParkingResource;

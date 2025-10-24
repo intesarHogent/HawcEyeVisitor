@@ -18,7 +18,7 @@ const BLUE = "#0d7ff2";
 const LIGHT_BLUE = "#eaf3ff";
 const LOGO_SIZE = 200;
 
-// ===== HawcVisitorTitle (شعار فقط بدون كلمة VISITOR وبلا تلوين) =====
+// logo 
 function HawcVisitorTitle() {
   const tilt = React.useRef(new Animated.Value(0)).current;
 
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 18 },
     shadowOpacity: 0.25,
     shadowRadius: 24,
-    elevation: 16, // لأندرويد
+    elevation: 16,
   },
 
   listContainer: {

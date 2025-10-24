@@ -24,17 +24,18 @@ const makeStartSlots = (step = 30) => {
 
 export default function BookingCalendarScreen() {
   const navigation = useNavigation<RootStackNavProps<"BookingCalendar">["navigation"]>();
-  const { params } = useRoute<RootStackNavProps<"BookingCalendar">["route"]>();
-  const type = (params as any)?.type as "room" | "car" | "parking";
+  const { params: { type } } = useRoute<RootStackNavProps<"BookingCalendar">["route"]>();
 
-  // الحالة
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [start, setStart] = useState<string | null>(null);
-  const [hours, setHours] = useState<number>(1); // مدة الحجز بالساعات
+  const [hours, setHours] = useState<number>(1); 
 
+  //بدّل الكلمة من داخل الكود إلى اسم مفهوم للمستخدم
   const typeLabel = useMemo(() => (type === "room" ? "Room" : type === "car" ? "Car" : "Parking"), [type]);
+  //يشوف إذا المستخدم اختار كل المطلوب (تاريخ، وقت، عدد ساعات)، حتى يقرر إذا الزر يشتغل أو يتعطل
   const canContinue = !!selectedDate && !!start && hours > 0;
-
+  //يصنع جدول أوقات كل نص ساعة،
+  //نستخدمها لليوز ميمو لما يكون عندنا قيمة نحسبها بالكود (مو ثابتة) لكن ما نريد نعيد حسابها كل مرة إلا إذا تغيّر شيء مهم فيها
   const startSlots = useMemo(() => makeStartSlots(30), []);
 
   // عند المتابعة انتقل إلى قائمة الموارد مع المعطيات

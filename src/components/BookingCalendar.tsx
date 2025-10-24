@@ -11,6 +11,7 @@ type Props = {
 
 export default function BookingCalendar({ selectedDate, onSelectDate }: Props) {
   const marked = {
+    //اذا المستخدم اختار يرجع الاختيار ولون ازرق وابيض تيكست واذا ما رجع يرجع كائن فارغ
     ...(selectedDate
       ? { [selectedDate]: { selected: true, selectedColor: BLUE, selectedTextColor: "white" } }
       : {}),
@@ -21,6 +22,7 @@ export default function BookingCalendar({ selectedDate, onSelectDate }: Props) {
       <Text style={s.title}>Select Date</Text>
       <Calendar
         markedDates={marked}
+        // المكتبه مال رياكت كالندر هي تجيب كلمة دي جاهزه موجوده 
         onDayPress={(day) => onSelectDate(day.dateString)}
         theme={{ selectedDayBackgroundColor: BLUE, todayTextColor: BLUE, arrowColor: BLUE }}
         style={s.calendar}

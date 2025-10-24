@@ -1,6 +1,4 @@
 {
-  "currency": "EUR",
-  "billingRule": "ceil",
   "rooms": [
     {
       "id": "r1",
@@ -62,10 +60,6 @@
       "evCharger": true,
       "image": "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80",
       "description": "Covered spot near main entrance.",
-      "bookings": [
-        { "from": "2025-10-24T08:00:00Z", "to": "2025-10-25T12:00:00Z" },
-        { "from": "2025-10-26T18:00:00Z", "to": "2025-10-27T06:00:00Z" }
-      ],
       "pricePerHour": 3.5
     },
     {
@@ -76,9 +70,6 @@
       "evCharger": false,
       "image": "https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=800&q=80",
       "description": "Close to elevator.",
-      "bookings": [
-        { "from": "2025-10-23T09:00:00Z", "to": "2025-10-25T10:00:00Z" }
-      ],
       "pricePerHour": 3.0
     },
     {
@@ -89,7 +80,6 @@
       "evCharger": false,
       "image": "https://images.unsplash.com/photo-1580205149444-80388a1f4e0a?auto=format&fit=crop&w=800&q=80",
       "description": "Open-air spot.",
-      "bookings": [],
       "pricePerHour": 2.0
     },
     {
@@ -100,7 +90,6 @@
       "evCharger": true,
       "image": "https://images.unsplash.com/photo-1617487887981-940e3dd32a18?auto=format&fit=crop&w=800&q=80",
       "description": "EV-ready spot.",
-      "bookings": [],
       "pricePerHour": 2.5
     },
     {
@@ -111,9 +100,6 @@
       "evCharger": false,
       "image": "https://images.unsplash.com/photo-1604147706283-d7119b5b63d2?auto=format&fit=crop&w=800&q=80",
       "description": "Shaded area.",
-      "bookings": [
-        { "from": "2025-10-22T07:00:00Z", "to": "2025-10-24T18:00:00Z" }
-      ],
       "pricePerHour": 3.0
     }
   ],
@@ -128,9 +114,6 @@
       "lastService": "2025-07-12",
       "image": "https://images.unsplash.com/photo-1502872364588-894d7d6ddfab?auto=format&fit=crop&w=800&q=80",
       "description": "Electric sedan with autopilot.",
-      "bookings": [
-        { "from": "2025-10-24T09:00:00Z", "to": "2025-10-25T14:00:00Z" }
-      ],
       "pricePerHour": 12
     },
     {
@@ -143,9 +126,6 @@
       "lastService": "2025-06-20",
       "image": "https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?auto=format&fit=crop&w=800&q=80",
       "description": "Compact EV for city rides.",
-      "bookings": [
-        { "from": "2025-10-23T07:00:00Z", "to": "2025-10-25T08:00:00Z" }
-      ],
       "pricePerHour": 10
     },
     {
@@ -158,7 +138,6 @@
       "lastService": "2025-05-15",
       "image": "https://images.unsplash.com/photo-1605559424843-9e6f0f13c1f4?auto=format&fit=crop&w=800&q=80",
       "description": "Spacious crossover EV.",
-      "bookings": [],
       "pricePerHour": 11
     },
     {
@@ -171,7 +150,6 @@
       "lastService": "2025-08-10",
       "image": "https://images.unsplash.com/photo-1617814070607-79a0a3a8e6d2?auto=format&fit=crop&w=800&q=80",
       "description": "Premium SUV EV.",
-      "bookings": [],
       "pricePerHour": 14
     },
     {
@@ -184,9 +162,6 @@
       "lastService": "2025-07-01",
       "image": "https://images.unsplash.com/photo-1603042382269-94f9a63a1a56?auto=format&fit=crop&w=800&q=80",
       "description": "Efficient city EV.",
-      "bookings": [
-        { "from": "2025-10-23T09:00:00Z", "to": "2025-10-26T09:00:00Z" }
-      ],
       "pricePerHour": 9
     },
     {
@@ -199,7 +174,6 @@
       "lastService": "2025-06-05",
       "image": "https://images.unsplash.com/photo-1616259822390-3ba4b4acccb3?auto=format&fit=crop&w=800&q=80",
       "description": "Agile hatchback EV.",
-      "bookings": [],
       "pricePerHour": 9
     }
   ]
