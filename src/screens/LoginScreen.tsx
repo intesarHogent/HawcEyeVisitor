@@ -1,6 +1,15 @@
 // src/screens/LoginScreen.tsx
 import React, { useState, useRef, useEffect } from "react";
-import {View,Text,TextInput,StyleSheet,KeyboardAvoidingView,Platform,TouchableOpacity,Animated,
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableOpacity,
+  Animated,
+  Alert,              // ← NEW
 } from "react-native";
 import { Formik } from "formik";
 import * as Yup from "yup";
@@ -9,6 +18,10 @@ import { useAppDispatch } from "../hooks/reduxHooks";
 import { login } from "../store/slices/auth";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+
+// ← NEW: استيراد فايربيس أوث
+import { auth } from "../../src/config/firebaseConfig";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 const BLUE = "#0d7ff2";
 const BG = "#f9fafb";
@@ -61,15 +74,35 @@ export default function LoginScreen() {
         <Formik
           initialValues={{ email: "", password: "" }}
           validationSchema={schema}
-          onSubmit={(v, { setSubmitting }) => {
-            dispatch(
-              login({
-                id: "u_" + Date.now(),
-                name: v.email.split("@")[0],
-                email: v.email,
-              })
-            );
-            setSubmitting(false);
+          // ← CHANGED: استخدام Firebase Auth بدل تسجيل دخول وهمي
+          onSubmit={async (v, { setSubmitting }) => {
+            try {
+              const cred = await signInWithEmailAndPassword(auth, v.email, v.password);
+
+              const user = cred.user;
+
+              // إبقاء الريدوكس مستعمل لكن مع بيانات حقيقية من Firebase
+              dispatch(
+                login({
+                  id: user.uid,
+                  name: user.displayName || v.email.split("@")[0],
+                  email: user.email || v.email,
+                })
+              );
+
+              // إذا عندك ناڤيجيتور يعتمد على حالة الأوث، يكفي هذا.
+              // ولو حاب، تقدر تضيف:
+              // nav.reset({ index: 0, routes: [{ name: "Main" as never }] });
+
+            } catch (error: any) {
+              console.log("Firebase login error:", error);
+              Alert.alert(
+                "Login failed",
+                error?.message || "Could not sign in. Please check your email and password."
+              );
+            } finally {
+              setSubmitting(false);
+            }
           }}
         >
           {({
@@ -180,14 +213,14 @@ const s = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 50,
   },
- titleWrap: {
-  position: "absolute",
-  top: -40, // ← رفع الشعار للأعلى أكثر (زد السالب إذا تريد أقرب للهيدر)
-  left: 0,
-  right: 0,
-  alignItems: "center",
-  zIndex: 2,
-},
+  titleWrap: {
+    position: "absolute",
+    top: -40, // ← رفع الشعار للأعلى أكثر (زد السالب إذا تريد أقرب للهيدر)
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    zIndex: 2,
+  },
   logoShadow: {
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 18 },
@@ -212,19 +245,19 @@ const s = StyleSheet.create({
     marginTop: 150,
   },
   title: { fontSize: 26, fontWeight: "900", color: "#0b1220", textAlign: "center" },
- subtitle: { fontSize: 14, color: BLUE, textAlign: "center", marginTop: 6, marginBottom: 22 },
+  subtitle: { fontSize: 14, color: BLUE, textAlign: "center", marginTop: 6, marginBottom: 22 },
   field: { marginBottom: 14 },
   label: { fontSize: 13, fontWeight: "700", color: "#334155", marginBottom: 6 },
   inputWrap: { position: "relative" },
   input: {
-  height: 46,
-  borderRadius: 10,
-  borderWidth: 1,
-  borderColor: BLUE,          // ← كان #dbe4f3
-  backgroundColor: "#eef6ff", // ← كان #f1f5f9
-  paddingHorizontal: 12,
-  color: "#0b1220",
-},
+    height: 46,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: BLUE,          // ← كان #dbe4f3
+    backgroundColor: "#eef6ff", // ← كان #f1f5f9
+    paddingHorizontal: 12,
+    color: "#0b1220",
+  },
   inputWithIcon: { paddingRight: 38 },
   eyeBtn: { position: "absolute", right: 10, top: 12 },
   inputErr: { borderColor: "#ef4444", backgroundColor: "#fff" },

@@ -7,6 +7,9 @@ import MaterialCommunityIcons from "@expo/vector-icons/build/MaterialCommunityIc
 import { useAppDispatch, useAppSelector } from "../hooks/reduxHooks";
 import { logout } from "../store/slices/auth";
 
+import { auth } from "../../src/config/firebaseConfig";              // ← NEW
+import { signOut } from "firebase/auth";                // ← NEW
+
 const BLUE = "#0d7ff2";
 
 export default function ProfileScreen() {
@@ -14,9 +17,14 @@ export default function ProfileScreen() {
   const user = useAppSelector((st) => st.auth.user);
   const dispatch = useAppDispatch();
 
-  const handleLogout = () => {
-    // يفرغ auth ويعيدك تلقائيًا لشاشة الدخول عبر Gate في Root
-    dispatch(logout());
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);                               // ← NEW
+    } catch (err) {
+      console.log("Firebase logout error:", err);        // ← NEW
+    }
+
+    dispatch(logout());                                   // يبقى كما هو
   };
 
   return (
@@ -24,7 +32,7 @@ export default function ProfileScreen() {
       {/* بطاقة المستخدم */}
       <View style={s.card}>
         <MaterialCommunityIcons
-          name="account-circle"     
+          name="account-circle"
           size={72}
           color={BLUE}
           style={{ marginBottom: 12 }}

@@ -1,11 +1,13 @@
 // src/screens/RegisterScreen.tsx
 import React, { useState } from "react";
-import {View,Text,TextInput,StyleSheet,KeyboardAvoidingView,Platform,TouchableOpacity,} from "react-native";
+import {View,Text,TextInput,StyleSheet,KeyboardAvoidingView,Platform,TouchableOpacity,Alert,} from "react-native";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import AppButton from "../components/AppButton";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { auth } from "../../src/config/firebaseConfig";              // ← NEW
+import { createUserWithEmailAndPassword } from "firebase/auth"; // ← NEW
 
 const BLUE = "#0d7ff2";
 const BG = "#f9fafb";
@@ -36,11 +38,21 @@ export default function RegisterScreen() {
         <Formik
           initialValues={{ name: "", email: "", password: "", confirm: "" }}
           validationSchema={schema}
-          onSubmit={(v, { setSubmitting, resetForm }) => {
-            resetForm();
-            setSubmitting(false);
-            // @ts-ignore
-            nav.navigate("Login");
+          onSubmit={async (v, { setSubmitting, resetForm }) => {               // ← CHANGED
+            try {                                                               // ← NEW
+              await createUserWithEmailAndPassword(auth, v.email, v.password);  // ← NEW
+              resetForm();                                                      // ← كان موجود لكن الآن بعد النجاح
+              // @ts-ignore
+              nav.navigate("Login");                                            // ← يبقى نفسه
+            } catch (error: any) {
+              console.log("Firebase register error:", error);                  // ← NEW
+              Alert.alert(
+                "Registration failed",
+                error?.message || "Could not create account. Please try again."
+              );
+            } finally {
+              setSubmitting(false);
+            }
           }}
         >
           {({
