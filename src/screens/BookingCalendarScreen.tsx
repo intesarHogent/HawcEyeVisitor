@@ -67,7 +67,7 @@ const currentHM = `${String(now.getHours()).padStart(2, "0")}:${String(
       <BookingCalendar
         selectedDate={draftForType.date}
         onSelectDate={(d) => {
-          if (d <= today) return; // منع الماضي
+          if (d < today) return; // منع الماضي
           dispatch(setDate({ type, date: d }));
         }}
         // إذا كان المكون يدعم minDate سيمنع الماضي بصريًا أيضًا
@@ -80,7 +80,7 @@ const currentHM = `${String(now.getHours()).padStart(2, "0")}:${String(
         value={draftForType.start}
         onChange={(v) => {
           // منع اختيار ساعة ماضية في نفس اليوم
-          if (draftForType.date >= today && v < currentHM) return;
+          if (draftForType.date == today && v < currentHM) return;
           dispatch(setStart({ type, start: v }));
         }}
         step={30}

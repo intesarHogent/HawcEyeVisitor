@@ -6,6 +6,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/build/MaterialCommunityIc
 // Redux
 import { useAppDispatch, useAppSelector } from "../hooks/reduxHooks";
 import { logout } from "../store/slices/auth";
+import { resetAll } from "../store/slices/bookingDraft";
 
 import { auth } from "../../src/config/firebaseConfig";              // ← NEW
 import { signOut } from "firebase/auth";                // ← NEW
@@ -25,6 +26,7 @@ export default function ProfileScreen() {
     }
 
     dispatch(logout());                                   // يبقى كما هو
+    dispatch(resetAll());
   };
 
   return (
