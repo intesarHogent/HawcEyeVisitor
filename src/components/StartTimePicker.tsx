@@ -7,6 +7,7 @@ type Props = {
   step?: number;                        // الدقائق بين كل خيار، افتراضي 30
   startAt?: string;                     // بداية اليوم "00:00"
   endAt?: string;                       // نهاية اليوم "23:30"
+  date?: string;                        // تاريخ اليوم المختار "YYYY-MM-DD"
 };
 
 const BLUE = "#0d7ff2";
@@ -31,8 +32,14 @@ export default function StartTimePicker({
   step = 30,
   startAt = "00:00",
   endAt = "23:30",
+  date,
 }: Props) {
   const slots = useMemo(() => makeSlots(step, startAt, endAt), [step, startAt, endAt]);
+
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const todayStr = now.toISOString().slice(0, 10);
+  const isToday = date === todayStr;
 
   return (
     <View style={s.box}>
@@ -44,10 +51,34 @@ export default function StartTimePicker({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ gap: 8 }}
         renderItem={({ item }) => {
-          const active = value === item;
+          const [h, m] = item.split(":").map(Number);
+          const slotMinutes = h * 60 + m;
+
+          // تعطيل الأوقات السابقة فقط إذا التاريخ هو اليوم
+          const disabled = isToday && slotMinutes < nowMinutes;
+
+          const active = !disabled && value === item;
           return (
-            <TouchableOpacity style={[s.chip, active && s.active]} onPress={() => onChange(item)}>
-              <Text style={[s.txt, active && s.txtActive]}>{item}</Text>
+            <TouchableOpacity
+              style={[
+                s.chip,
+                active && s.active,
+                disabled && s.disabledChip,
+              ]}
+              onPress={() => {
+                if (!disabled) onChange(item);
+              }}
+              disabled={disabled}
+            >
+              <Text
+                style={[
+                  s.txt,
+                  active && s.txtActive,
+                  disabled && s.disabledTxt,
+                ]}
+              >
+                {item}
+              </Text>
             </TouchableOpacity>
           );
         }}
@@ -69,4 +100,11 @@ const s = StyleSheet.create({
   active: { backgroundColor: "#eaf3ff", borderColor: BLUE },
   txt: { color: "#0b1220", fontWeight: "600" },
   txtActive: { color: BLUE },
+  disabledChip: {
+    backgroundColor: "#f1f5f9",
+    borderColor: "#cbd5e1",
+  },
+  disabledTxt: {
+    color: "#94a3b8",
+  },
 });

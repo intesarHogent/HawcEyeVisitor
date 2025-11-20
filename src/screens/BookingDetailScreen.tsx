@@ -4,26 +4,9 @@ import { View, Text, StyleSheet, Image, ScrollView, Alert, Animated } from "reac
 import { useRoute, useNavigation, StackActions } from "@react-navigation/native";
 import type { RootStackNavProps } from "../navigation/types";
 import type { Resource } from "../types/env";
-import BookingButton from "../components/AppButton"; // الزر الجديد
-
-// Redux: نُبقي فقط ما يخص مسودة الحجز
+import BookingButton from "../components/AppButton";
 import { useAppDispatch, useAppSelector } from "../hooks/reduxHooks";
-import { resetCurrent } from "../store/slices/bookingDraft";
 
-// ===== Firestore =====
-import { auth, db } from "../../src/config/firebaseConfig";
-
-
-import {
-  addDoc,
-  collection,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
-// ======================
-
-const BLUE = "#0d7ff2";
 const CTA_H = 72;
 
 
@@ -218,7 +201,7 @@ export default function BookingDetailScreen() {
         >
           <Text
             style={{
-              color: "red",
+              color: "#facc15",
               fontWeight: "700",
               textAlign: "center",
               fontSize: 12,
@@ -258,7 +241,7 @@ const s = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: "#fff" },
   cc: { paddingBottom: 0 },
   img: { width: "100%", height: 240 },
-  header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
+  header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 0 },
   title: {
     fontSize: 24,
     fontWeight: "800",
@@ -266,23 +249,23 @@ const s = StyleSheet.create({
     marginBottom: 6,
     color: "#0b0f19",
   },
-  sub: { fontSize: 15, color: "#4b5563", marginBottom: 8 },
+  sub: { fontSize: 15, color: "#4b5563", marginBottom: 0 },
   desc: { fontSize: 16, color: "#111827", lineHeight: 23 },
   hint: { marginTop: 6, fontSize: 13, color: "#475569", fontWeight: "600" },
   section: {
     marginTop: 18,
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 8,
+    paddingBottom: 0,
     borderTopWidth: 1,
     borderTopColor: "#e5e7eb",
   },
-  h2: { fontSize: 18, fontWeight: "700", marginBottom: 10, color: "#0b0f19" },
+  h2: { fontSize: 18, fontWeight: "700", marginBottom: 0, color: "#0b0f19" },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
   label: { fontSize: 15, color: "#374151", fontWeight: "600" },
   value: { fontSize: 15, color: "#111827" },

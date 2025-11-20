@@ -3,21 +3,16 @@ import React, { useMemo, useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { RootStackNavProps } from "../navigation/types";
-
 import BookingCalendar from "../components/BookingCalendar";
 import DurationPicker from "../components/DurationPicker";
 import StartTimePicker from "../components/StartTimePicker";
 import BookingButton from "../components/AppButton";
-
 import { useAppDispatch, useAppSelector } from "../hooks/reduxHooks";
 import { setType, setDate, setStart, setHours } from "../store/slices/bookingDraft";
 
 const LIGHT_BLUE = "#eaf3ff";
 const BLUE = "#0d7ff2";
 const DEFAULT_DRAFT = { date: "", start: null as string | null, hours: 1 };
-
-// تاريخ اليوم بتنسيق YYYY-MM-DD (UTC)
-const todayUTC = () => new Date().toISOString().slice(0, 10);
 
 export default function BookingCalendarScreen() {
   const navigation = useNavigation<RootStackNavProps<"BookingCalendar">["navigation"]>();
@@ -51,40 +46,28 @@ export default function BookingCalendarScreen() {
     });
   };
 
-  const today = todayUTC();
-
-  // وقت الآن (محلي) بصيغة HH:mm
-const now = new Date();
-const currentHM = `${String(now.getHours()).padStart(2, "0")}:${String(
-  now.getMinutes()
-).padStart(2, "0")}`;
-
   return (
     <View style={s.container}>
       <Text style={s.header}>Choose {typeLabel} date</Text>
 
-      {/* اختيار التاريخ — منع اختيار الأيام السابقة لليوم */}
+      {/* اختيار التاريخ */}
       <BookingCalendar
         selectedDate={draftForType.date}
         onSelectDate={(d) => {
-          if (d < today) return; // منع الماضي
           dispatch(setDate({ type, date: d }));
         }}
-        // إذا كان المكون يدعم minDate سيمنع الماضي بصريًا أيضًا
-        // @ts-ignore
-        minDate={today}
       />
 
       {/* اختيار وقت البداية */}
-      <StartTimePicker
+        <StartTimePicker
         value={draftForType.start}
         onChange={(v) => {
-          // منع اختيار ساعة ماضية في نفس اليوم
-          if (draftForType.date == today && v < currentHM) return;
           dispatch(setStart({ type, start: v }));
         }}
         step={30}
+        date={draftForType.date}  
       />
+
 
       {/* اختيار المدة */}
       <DurationPicker

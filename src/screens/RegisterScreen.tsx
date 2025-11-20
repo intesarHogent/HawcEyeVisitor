@@ -13,7 +13,6 @@ const BLUE = "#0d7ff2";
 const BG = "#f9fafb";
 
 const schema = Yup.object({
-  name: Yup.string().min(2, "Min 2 chars").required("Name is required"),
   email: Yup.string().email("Invalid email").required("Email is required"),
   password: Yup.string().min(6, "Min 6 chars").required("Password is required"),
   confirm: Yup.string()
@@ -25,6 +24,7 @@ export default function RegisterScreen() {
   const nav = useNavigation();
   const [hidePass, setHidePass] = useState(true);
   const [hideConfirm, setHideConfirm] = useState(true);
+  const [showPopup, setShowPopup] = useState(false);
 
   return (
     <KeyboardAvoidingView
@@ -33,19 +33,18 @@ export default function RegisterScreen() {
     >
       <View style={s.card}>
         <Text style={s.title}>Create account</Text>
-        <Text style={s.subtitle}>Start booking with HAWC Visitor</Text>
+        <Text style={s.subtitle}>Start booking with HAWCEyeVisitor</Text>
 
         <Formik
-          initialValues={{ name: "", email: "", password: "", confirm: "" }}
+          initialValues={{ email: "", password: "", confirm: "" }}
           validationSchema={schema}
-          onSubmit={async (v, { setSubmitting, resetForm }) => {               // ← CHANGED
-            try {                                                               // ← NEW
-              await createUserWithEmailAndPassword(auth, v.email, v.password);  // ← NEW
-              resetForm();                                                      // ← كان موجود لكن الآن بعد النجاح
-              // @ts-ignore
-              nav.navigate("Login");                                            // ← يبقى نفسه
+          onSubmit={async (v, { setSubmitting, resetForm }) => {             
+            try {                                                               
+              await createUserWithEmailAndPassword(auth, v.email, v.password);  
+              resetForm();                                                      
+              setShowPopup(true);
             } catch (error: any) {
-              console.log("Firebase register error:", error);                  // ← NEW
+              console.log("Firebase register error:", error);                 
               Alert.alert(
                 "Registration failed",
                 error?.message || "Could not create account. Please try again."
@@ -65,30 +64,15 @@ export default function RegisterScreen() {
             isSubmitting,
           }) => {
             const isValid =
-              values.name.trim() !== "" &&
               values.email.trim() !== "" &&
               values.password.trim() !== "" &&
               values.confirm.trim() !== "" &&
-              !errors.name &&
               !errors.email &&
               !errors.password &&
               !errors.confirm;
 
             return (
               <>
-                <View style={s.field}>
-                  <Text style={s.label}>Full name</Text>
-                  <TextInput
-                    style={[s.input, touched.name && errors.name ? s.inputErr : null]}
-                    placeholder="John Doe"
-                    placeholderTextColor="#94a3b8"
-                    value={values.name}
-                    onChangeText={handleChange("name")}
-                    onBlur={handleBlur("name")}
-                  />
-                  {touched.name && errors.name ? <Text style={s.err}>{errors.name}</Text> : null}
-                </View>
-
                 <View style={s.field}>
                   <Text style={s.label}>Email</Text>
                   <TextInput
@@ -185,6 +169,15 @@ export default function RegisterScreen() {
           }}
         </Formik>
       </View>
+
+      <SuccessPopup
+        visible={showPopup}
+        onClose={() => {
+          setShowPopup(false);
+          // @ts-ignore
+          nav.navigate("Login");
+        }}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -219,14 +212,14 @@ const s = StyleSheet.create({
   label: { fontSize: 13, fontWeight: "700", color: "#334155", marginBottom: 6 },
   inputWrap: { position: "relative" },
   input: {
-  height: 46,
-  borderRadius: 10,
-  borderWidth: 1,
-  borderColor: BLUE,          // كان #dbe4f3
-  backgroundColor: "#eef6ff", // كان #f1f5f9
-  paddingHorizontal: 12,
-  color: "#0b1220",
-},
+    height: 46,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: BLUE,         
+    backgroundColor: "#eef6ff",
+    paddingHorizontal: 12,
+    color: "#0b1220",
+  },
   inputWithIcon: { paddingRight: 38 },
   eyeBtn: { position: "absolute", right: 10, top: 12 },
   inputErr: { borderColor: "#ef4444", backgroundColor: "#fff" },
@@ -234,4 +227,61 @@ const s = StyleSheet.create({
   btn: { marginTop: 18 },
   footer: { textAlign: "center", color: BLUE, marginTop: 12 },
   link: { color: BLUE, fontWeight: "800" },
+});
+
+const SuccessPopup = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
+  if (!visible) return null;
+
+  return (
+    <View style={popupStyles.overlay}>
+      <View style={popupStyles.box}>
+        <Text style={popupStyles.title}>Success</Text>
+        <Text style={popupStyles.msg}>Account created successfully.</Text>
+
+        <TouchableOpacity onPress={onClose} style={popupStyles.btn}>
+          <Text style={popupStyles.btnText}>OK</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+const popupStyles = StyleSheet.create({
+  overlay: {
+    position: "absolute",
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  box: {
+    width: "80%",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 22,
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "900",
+    color: "#22c55e",     // أخضر
+    marginBottom: 10,
+  },
+  msg: {
+    fontSize: 15,
+    color: "#0f172a",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+btn: {
+  backgroundColor: "#2a4dd9ff", 
+  paddingVertical: 10,
+  paddingHorizontal: 30,
+  borderRadius: 8,
+},
+  btnText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
+  },
 });
