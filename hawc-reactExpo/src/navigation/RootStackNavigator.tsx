@@ -6,10 +6,10 @@ import ResourceBrowse from "../screens/ResourceBrowse";
 import BookingListScreen from "../screens/BookingList";
 import BookingDetailScreen from "../screens/BookingDetailScreen";
 import BookingCalendarScreen from "../screens/BookingCalendarScreen";
-import AboutScreen from "../screens/AboutScreen"; 
+import AboutScreen from "../screens/AboutScreen";
 import PaymentScreen from "../screens/PaymentScreen";
 import PaymentWebView from "../screens/PaymentWebView";
-
+import BookingSuccessScreen from "../screens/BookingSuccess"; // ← NEW
 
 const RootStack = createStackNavigator<RootStackParamList>();
 
@@ -43,7 +43,10 @@ const RootStackNavigator = () => {
         name="BookingList"
         component={BookingListScreen}
         options={({ route }) => {
-          const { type } = route.params as { type: "room" | "car" | "parking"; date?: string };
+          const { type } = route.params as {
+            type: "room" | "car" | "parking";
+            date?: string;
+          };
           const titles = { room: "Rooms", car: "Cars", parking: "Parking" };
           return { title: titles[type], headerBackTitle: "" };
         }}
@@ -60,17 +63,24 @@ const RootStackNavigator = () => {
         component={AboutScreen}
         options={{ title: "About HAWC-Servers", headerBackTitle: "" }}
       />
+
       <RootStack.Screen
-          name="Payment"
-          component={PaymentScreen}
-          options={{ title: "Payment", headerBackTitle: "" }}
-        />
-     <RootStack.Screen
+        name="Payment"
+        component={PaymentScreen}
+        options={{ title: "Payment", headerBackTitle: "" }}
+      />
+
+      <RootStack.Screen
         name="PaymentWebView"
         component={PaymentWebView}
         options={{ title: "Payment" }}
       />
 
+      <RootStack.Screen
+        name="BookingSuccess"                  // ← NEW
+        component={BookingSuccessScreen}       // ← NEW
+        options={{ title: "Booking confirmed", headerBackTitle: "" }} // ← NEW
+      />
     </RootStack.Navigator>
   );
 };

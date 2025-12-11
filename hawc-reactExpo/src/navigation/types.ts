@@ -1,3 +1,4 @@
+// src/navigation/types.ts
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { StackScreenProps } from "@react-navigation/stack";
 import { Resource, ResourceType } from "../types/env";
@@ -13,9 +14,7 @@ export type RootStackParamList = {
     date: string;
     start: string;
     end: string;
-    total: number;
-    userId: string;
-    userEmail: string | null;
+    total: number;          // فقط هذا، userId / userEmail تؤخذ من auth.currentUser
   };
 
   PaymentWebView: {
@@ -35,7 +34,16 @@ export type RootStackParamList = {
     };
   };
 
-  About: undefined; // ← الإضافة
+  BookingSuccess: {
+    via?: "invoice" | "payment";
+    data?: Resource;
+    date?: string;
+    start?: string;
+    end?: string;
+    total?: number;
+  };
+
+  About: undefined;
 };
 
 export type TabParamsList = {

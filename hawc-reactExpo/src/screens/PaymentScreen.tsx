@@ -1,22 +1,20 @@
 // src/screens/PaymentScreen.tsx
 
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, ScrollView, Alert, StyleSheet } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import type { RootStackNavProps } from "../navigation/types";
 import BookingButton from "../components/AppButton";
 
-// Redux
-import { useAppDispatch } from "../hooks/reduxHooks";
-import { resetCurrent } from "../store/slices/bookingDraft";
-
-// Firestore
+// Firestore + Auth
 import { auth, db } from "../config/firebaseConfig";
 import {
   getDocs,
   collection,
   query,
   where,
+  doc,
+  getDoc,
 } from "firebase/firestore";
 
 // Backend base URL (Vercel)
@@ -26,9 +24,33 @@ const MOLLIE_RETURN_URL = "https://example.org/return";
 export default function PaymentScreen() {
   const { params } = useRoute<RootStackNavProps<"Payment">["route"]>();
   const navigation = useNavigation<RootStackNavProps<"Payment">["navigation"]>();
-  const dispatch = useAppDispatch();
 
-  const { data, date, start, end, total, userId, userEmail } = params;
+  const { data, date, start, end, total } = params;
+
+  // نوع المستخدم (من Firestore)
+  const [userType, setUserType] = useState<"standard" | "professional">("standard");
+  // لمنع الضغط المتكرر على زر Pay later
+  const [invoiceBusy, setInvoiceBusy] = useState(false);
+
+  // تحميل نوع الحساب من Firestore
+  useEffect(() => {
+    const fetchUserType = async () => {
+      const uid = auth.currentUser?.uid;
+      if (!uid) return;
+
+      try {
+        const snap = await getDoc(doc(db, "users", uid));
+        if (snap.exists()) {
+          const d = snap.data() as any;
+          setUserType(d.userType || "standard");
+        }
+      } catch (err) {
+        console.log("Failed to load userType:", err);
+      }
+    };
+
+    fetchUserType();
+  }, []);
 
   const buildUTC = (d?: string, hm?: string) => {
     if (!d || !hm) return null;
@@ -59,8 +81,8 @@ export default function PaymentScreen() {
       );
 
       const snap = await getDocs(q);
-      const conflict = snap.docs.some((doc) => {
-        const d = doc.data() as any;
+      const conflict = snap.docs.some((docSnap) => {
+        const d = docSnap.data() as any;
         return overlaps(new Date(sIso), new Date(eIso), d.start, d.end);
       });
 
@@ -69,12 +91,18 @@ export default function PaymentScreen() {
     []
   );
 
+  // الدفع مع Mollie
   const handleContinue = useCallback(async () => {
     if (!date || !start || !end) return;
 
-    // نسمح بالاستمرار حتى لو userId مفقود (لنظهر خطأ سابقًا فقط في الواجهة)
-    const effectiveUserId = userId ?? "";
-    const effectiveUserEmail = userEmail ?? null;
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      Alert.alert("Error", "You are not logged in. Please sign in again.");
+      return;
+    }
+
+    const effectiveUserId = currentUser.uid;
+    const effectiveUserEmail = currentUser.email ?? null;
 
     const s = buildUTC(date, start);
     const e = buildUTC(date, end);
@@ -98,45 +126,33 @@ export default function PaymentScreen() {
         return;
       }
 
-      const response = await fetch(
-        `${PAYMENTS_BASE_URL}/api/create-payment`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+      const response = await fetch(`${PAYMENTS_BASE_URL}/api/create-payment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: total,
+          description: `Booking ${(data as any).name}`,
+          metadata: {
+            resourceId: (data as any).id,
+            date,
+            start,
+            end,
+            userId: effectiveUserId,
+            userEmail: effectiveUserEmail,
           },
-          body: JSON.stringify({
-            amount: total,
-            description: `Booking ${(data as any).name}`,
-            metadata: {
-              resourceId: (data as any).id,
-              date,
-              start,
-              end,
-              userId: effectiveUserId,
-              userEmail: effectiveUserEmail,
-            },
-          }),
-        }
-      );
+        }),
+      });
 
       if (!response.ok) {
         console.log("create-payment failed status:", response.status);
-        Alert.alert(
-          "Payment error",
-          "Could not initiate payment. Please try again."
-        );
+        Alert.alert("Payment error", "Could not initiate payment. Please try again.");
         return;
       }
 
       const paymentData = await response.json();
-      console.log("Mollie payment created:", paymentData);
 
       if (!paymentData.checkoutUrl || !paymentData.id) {
-        Alert.alert(
-          "Payment error",
-          "Invalid payment response. Please try again."
-        );
+        Alert.alert("Payment error", "Invalid payment response.");
         return;
       }
 
@@ -161,7 +177,94 @@ export default function PaymentScreen() {
       console.log("Failed to start payment:", err);
       Alert.alert("Error", "Could not start payment. Please try again.");
     }
-  }, [date, start, end, data, total, userId, userEmail, checkConflict, navigation]);
+  }, [date, start, end, data, total, checkConflict, navigation]);
+
+  // الفوترة لاحقاً (للمستخدم المهني فقط)
+  const handleInvoiceLater = useCallback(async () => {
+    if (invoiceBusy) return; // منع الضغط المتكرر
+
+    if (!date || !start || !end) return;
+
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      Alert.alert("Error", "You are not logged in. Please sign in again.");
+      return;
+    }
+
+    const s = buildUTC(date, start);
+    const e = buildUTC(date, end);
+
+    if (!s || !e) {
+      Alert.alert("Error", "Invalid time range.");
+      return;
+    }
+
+    const sIso = s.toISOString();
+    const eIso = e.toISOString();
+
+    try {
+      setInvoiceBusy(true);
+
+      // نفس فحص التعارض مثل Mollie
+      const conflict = await checkConflict((data as any).id, sIso, eIso);
+
+      if (conflict) {
+        Alert.alert(
+          "Time conflict",
+          "This resource is already booked in this time range. Please choose another time."
+        );
+        return;
+      }
+
+      const res = await fetch(
+        "https://hawc-payments-backend.vercel.app/api/create-invoice-booking",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: total,
+            description: `Invoice booking ${(data as any).name}`,
+            metadata: {
+              resourceId: (data as any).id,
+              date,
+              start,
+              end,
+              userId: currentUser.uid,
+              userEmail: currentUser.email ?? null,
+            },
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.log("Invoice API error:", res.status, text);
+        Alert.alert(
+          "Error",
+          "Could not create invoice booking (server error). Please try again."
+        );
+        return;
+      }
+
+      const json = await res.json();
+      console.log("Invoice API success:", json);
+
+      // @ts-ignore
+      navigation.navigate("BookingSuccess", {
+        via: "invoice",
+        data,
+        date,
+        start,
+        end,
+        total,
+      });
+    } catch (err) {
+      console.log("Invoice booking error:", err);
+      Alert.alert("Error", "Could not create invoice booking.");
+    } finally {
+      setInvoiceBusy(false);
+    }
+  }, [invoiceBusy, date, start, end, data, total, checkConflict, navigation]);
 
   return (
     <View style={styles.container}>
@@ -172,9 +275,7 @@ export default function PaymentScreen() {
           <Text style={styles.cardLabel}>Resource</Text>
           <Text style={styles.cardValue}>{(data as any).name}</Text>
           {Boolean((data as any).location) && (
-            <Text style={styles.cardSubText}>
-              {(data as any).location}
-            </Text>
+            <Text style={styles.cardSubText}>{(data as any).location}</Text>
           )}
         </View>
 
@@ -194,36 +295,39 @@ export default function PaymentScreen() {
           <Text style={styles.infoTitle}>Secure online payment</Text>
           <Text style={styles.infoText}>
             You will be redirected to a secure payment page to complete this booking.
-            Once the payment is confirmed, your reservation will be saved automatically.
           </Text>
         </View>
 
-        <BookingButton
-          label="Continue to payment"
-          onPress={handleContinue}
-        />
+        {/* STANDARD USER → Mollie only */}
+        {userType === "standard" && (
+          <BookingButton label="Pay with Mollie" onPress={handleContinue} />
+        )}
+
+        {/* PROFESSIONAL USER → Mollie + Invoice */}
+        {userType === "professional" && (
+          <>
+            <BookingButton label="Pay with Mollie" onPress={handleContinue} />
+            <BookingButton
+              label="Pay later (invoice)"
+              onPress={handleInvoiceLater}
+              style={{ marginTop: 12 }}
+            />
+          </>
+        )}
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-  },
+  container: { flex: 1, backgroundColor: "#ffffff" },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 16,
     paddingTop: 24,
     paddingBottom: 24,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#0f172a",
-    marginBottom: 16,
-  },
+  title: { fontSize: 24, fontWeight: "800", color: "#0f172a", marginBottom: 16 },
   card: {
     backgroundColor: "#f8fafc",
     borderRadius: 16,
@@ -242,25 +346,10 @@ const styles = StyleSheet.create({
     color: "#334155",
     marginBottom: 4,
   },
-  cardValue: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#0f172a",
-  },
-  cardSubText: {
-    fontSize: 14,
-    color: "#64748b",
-    marginTop: 4,
-  },
-  whenText: {
-    fontSize: 14,
-    color: "#1e293b",
-  },
-  amount: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#2563eb",
-  },
+  cardValue: { fontSize: 18, fontWeight: "700", color: "#0f172a" },
+  cardSubText: { fontSize: 14, color: "#64748b", marginTop: 4 },
+  whenText: { fontSize: 14, color: "#1e293b" },
+  amount: { fontSize: 24, fontWeight: "800", color: "#2563eb" },
   infoBox: {
     backgroundColor: "#eff6ff",
     borderWidth: 1,
@@ -269,14 +358,6 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 32,
   },
-  infoTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1d4ed8",
-    marginBottom: 4,
-  },
-  infoText: {
-    fontSize: 12,
-    color: "#1d4ed8",
-  },
+  infoTitle: { fontSize: 14, fontWeight: "600", color: "#1d4ed8", marginBottom: 4 },
+  infoText: { fontSize: 12, color: "#1d4ed8" },
 });

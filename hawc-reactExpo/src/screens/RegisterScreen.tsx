@@ -1,23 +1,37 @@
 // src/screens/RegisterScreen.tsx
 import React, { useState } from "react";
-import {View,Text,TextInput,StyleSheet,KeyboardAvoidingView,Platform,TouchableOpacity,Alert,} from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableOpacity,
+  Alert,
+  SafeAreaView,
+} from "react-native";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import AppButton from "../components/AppButton";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { auth } from "../config/firebaseConfig";              // ← NEW
-import { createUserWithEmailAndPassword } from "firebase/auth"; // ← NEW
+import { auth, db } from "../config/firebaseConfig";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 
 const BLUE = "#0d7ff2";
 const BG = "#f9fafb";
 
 const schema = Yup.object({
+  fullName: Yup.string().min(2, "Too short").required("Name is required"),
   email: Yup.string().email("Invalid email").required("Email is required"),
   password: Yup.string().min(6, "Min 6 chars").required("Password is required"),
   confirm: Yup.string()
     .oneOf([Yup.ref("password")], "Passwords do not match")
     .required("Confirm your password"),
+  companyName: Yup.string().optional(),
+  vat: Yup.string().optional(),
 });
 
 export default function RegisterScreen() {
@@ -25,160 +39,262 @@ export default function RegisterScreen() {
   const [hidePass, setHidePass] = useState(true);
   const [hideConfirm, setHideConfirm] = useState(true);
   const [showPopup, setShowPopup] = useState(false);
+  const [userType, setUserType] = useState<"standard" | "professional">("standard");
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={s.container}
-    >
-      <View style={s.card}>
-        <Text style={s.title}>Create account</Text>
-        <Text style={s.subtitle}>Start booking with HAWCEyeVisitor</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: BG }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={s.container}
+      >
+        <View style={s.card}>
+          <Text style={s.title}>Create account</Text>
+          <Text style={s.subtitle}>Start booking with HAWCEyeVisitor</Text>
 
-        <Formik
-          initialValues={{ email: "", password: "", confirm: "" }}
-          validationSchema={schema}
-          onSubmit={async (v, { setSubmitting, resetForm }) => {             
-            try {                                                               
-              await createUserWithEmailAndPassword(auth, v.email, v.password);  
-              resetForm();                                                      
-              setShowPopup(true);
-            } catch (error: any) {
-              console.log("Firebase register error:", error);                 
-              Alert.alert(
-                "Registration failed",
-                error?.message || "Could not create account. Please try again."
-              );
-            } finally {
-              setSubmitting(false);
-            }
-          }}
-        >
-          {({
-            handleChange,
-            handleBlur,
-            handleSubmit,
-            values,
-            errors,
-            touched,
-            isSubmitting,
-          }) => {
-            const isValid =
-              values.email.trim() !== "" &&
-              values.password.trim() !== "" &&
-              values.confirm.trim() !== "" &&
-              !errors.email &&
-              !errors.password &&
-              !errors.confirm;
+          <Formik
+            initialValues={{
+              fullName: "",
+              email: "",
+              password: "",
+              confirm: "",
+              companyName: "",
+              vat: "",
+            }}
+            validationSchema={schema}
+            onSubmit={async (v, { setSubmitting, resetForm }) => {
+              try {
+                const cred = await createUserWithEmailAndPassword(auth, v.email, v.password);
 
-            return (
-              <>
-                <View style={s.field}>
-                  <Text style={s.label}>Email</Text>
-                  <TextInput
-                    style={[s.input, touched.email && errors.email ? s.inputErr : null]}
-                    placeholder="you@example.com"
-                    placeholderTextColor="#94a3b8"
-                    value={values.email}
-                    onChangeText={handleChange("email")}
-                    onBlur={handleBlur("email")}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoComplete="email"
+                const userData: any = {
+                  fullName: v.fullName,
+                  email: v.email,
+                  userType: userType,
+                  createdAt: new Date().toISOString(),
+                };
+
+                if (userType === "professional") {
+                  userData.companyName = v.companyName;
+                  userData.vat = v.vat;
+                  userData.canInvoice = true;
+                }
+
+                await setDoc(doc(db, "users", cred.user.uid), userData);
+
+                resetForm();
+                setShowPopup(true);
+              } catch (error: any) {
+                console.log("Firebase register error:", error);
+                Alert.alert(
+                  "Registration failed",
+                  error?.message || "Could not create account. Please try again."
+                );
+              } finally {
+                setSubmitting(false);
+              }
+            }}
+          >
+            {({
+              handleChange,
+              handleBlur,
+              handleSubmit,
+              values,
+              errors,
+              touched,
+              isSubmitting,
+            }) => {
+              const isValid =
+                (values.fullName || "").trim() !== "" &&
+                (values.email || "").trim() !== "" &&
+                (values.password || "").trim() !== "" &&
+                (values.confirm || "").trim() !== "" &&
+                !errors.fullName &&
+                !errors.email &&
+                !errors.password &&
+                !errors.confirm;
+
+              return (
+                <>
+                  {/* Full name */}
+                  <View style={s.field}>
+                    <Text style={s.label}>Full name</Text>
+                    <TextInput
+                      style={[s.input, touched.fullName && errors.fullName ? s.inputErr : null]}
+                      placeholder="Your full name"
+                      placeholderTextColor="#94a3b8"
+                      value={values.fullName}
+                      onChangeText={handleChange("fullName")}
+                      onBlur={handleBlur("fullName")}
+                    />
+                    {touched.fullName && errors.fullName ? (
+                      <Text style={s.err}>{errors.fullName}</Text>
+                    ) : null}
+                  </View>
+
+                  {/* Email */}
+                  <View style={s.field}>
+                    <Text style={s.label}>Email</Text>
+                    <TextInput
+                      style={[s.input, touched.email && errors.email ? s.inputErr : null]}
+                      placeholder="you@example.com"
+                      placeholderTextColor="#94a3b8"
+                      value={values.email}
+                      onChangeText={handleChange("email")}
+                      onBlur={handleBlur("email")}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoComplete="email"
+                    />
+                    {touched.email && errors.email ? (
+                      <Text style={s.err}>{errors.email}</Text>
+                    ) : null}
+                  </View>
+
+                  {/* Password */}
+                  <View style={s.field}>
+                    <Text style={s.label}>Password</Text>
+                    <View style={s.inputWrap}>
+                      <TextInput
+                        style={[
+                          s.input,
+                          s.inputWithIcon,
+                          touched.password && errors.password ? s.inputErr : null,
+                        ]}
+                        placeholder="••••••••"
+                        placeholderTextColor="#94a3b8"
+                        value={values.password}
+                        onChangeText={handleChange("password")}
+                        onBlur={handleBlur("password")}
+                        secureTextEntry={hidePass}
+                      />
+                      <TouchableOpacity
+                        onPress={() => setHidePass(!hidePass)}
+                        style={s.eyeBtn}
+                      >
+                        <MaterialCommunityIcons
+                          name={hidePass ? "eye-off-outline" : "eye-outline"}
+                          size={22}
+                          color="#64748b"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                    {touched.password && errors.password ? (
+                      <Text style={s.err}>{errors.password}</Text>
+                    ) : null}
+                  </View>
+
+                  {/* Confirm password */}
+                  <View style={s.field}>
+                    <Text style={s.label}>Confirm password</Text>
+                    <View style={s.inputWrap}>
+                      <TextInput
+                        style={[
+                          s.input,
+                          s.inputWithIcon,
+                          touched.confirm && errors.confirm ? s.inputErr : null,
+                        ]}
+                        placeholder="••••••••"
+                        placeholderTextColor="#94a3b8"
+                        value={values.confirm}
+                        onChangeText={handleChange("confirm")}
+                        onBlur={handleBlur("confirm")}
+                        secureTextEntry={hideConfirm}
+                      />
+                      <TouchableOpacity
+                        onPress={() => setHideConfirm(!hideConfirm)}
+                        style={s.eyeBtn}
+                      >
+                        <MaterialCommunityIcons
+                          name={hideConfirm ? "eye-off-outline" : "eye-outline"}
+                          size={22}
+                          color="#64748b"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                    {touched.confirm && errors.confirm ? (
+                      <Text style={s.err}>{errors.confirm}</Text>
+                    ) : null}
+                  </View>
+
+                  {/* Account type */}
+                  <View style={s.field}>
+                    <Text style={s.label}>Account type</Text>
+                    <View style={{ flexDirection: "row", gap: 10 }}>
+                      <TouchableOpacity
+                        onPress={() => setUserType("standard")}
+                        style={[s.typeBtn, userType === "standard" && s.typeBtnActive]}
+                      >
+                        <Text>Standard</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        onPress={() => setUserType("professional")}
+                        style={[s.typeBtn, userType === "professional" && s.typeBtnActive]}
+                      >
+                        <Text>Professional</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Professional fields */}
+                  {userType === "professional" && (
+                    <>
+                      <View style={s.field}>
+                        <Text style={s.label}>Company name</Text>
+                        <TextInput
+                          style={s.input}
+                          placeholder="Company BV"
+                          placeholderTextColor="#94a3b8"
+                          value={values.companyName}
+                          onChangeText={handleChange("companyName")}
+                        />
+                      </View>
+
+                      <View style={s.field}>
+                        <Text style={s.label}>VAT / BTW number</Text>
+                        <TextInput
+                          style={s.input}
+                          placeholder="BE0123456789"
+                          placeholderTextColor="#94a3b8"
+                          value={values.vat}
+                          onChangeText={handleChange("vat")}
+                        />
+                      </View>
+                    </>
+                  )}
+
+                  <AppButton
+                    label="Create account"
+                    onPress={() => handleSubmit()}
+                    disabled={!isValid || isSubmitting}
+                    style={s.btn}
                   />
-                  {touched.email && errors.email ? <Text style={s.err}>{errors.email}</Text> : null}
-                </View>
 
-                {/* Password */}
-                <View style={s.field}>
-                  <Text style={s.label}>Password</Text>
-                  <View style={s.inputWrap}>
-                    <TextInput
-                      style={[
-                        s.input,
-                        s.inputWithIcon,
-                        touched.password && errors.password ? s.inputErr : null,
-                      ]}
-                      placeholder="••••••••"
-                      placeholderTextColor="#94a3b8"
-                      value={values.password}
-                      onChangeText={handleChange("password")}
-                      onBlur={handleBlur("password")}
-                      secureTextEntry={hidePass}
-                    />
-                    <TouchableOpacity
-                      onPress={() => setHidePass(!hidePass)}
-                      style={s.eyeBtn}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  <Text style={s.footer}>
+                    Already have an account?
+                    <Text
+                      style={s.link}
+                      onPress={() => nav.navigate("Login" as never)}
                     >
-                      <MaterialCommunityIcons
-                        name={hidePass ? "eye-off-outline" : "eye-outline"}
-                        size={22}
-                        color="#64748b"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                  {touched.password && errors.password ? <Text style={s.err}>{errors.password}</Text> : null}
-                </View>
+                      {" "}
+                      Sign in
+                    </Text>
+                  </Text>
+                </>
+              );
+            }}
+          </Formik>
+        </View>
 
-                {/* Confirm password */}
-                <View style={s.field}>
-                  <Text style={s.label}>Confirm password</Text>
-                  <View style={s.inputWrap}>
-                    <TextInput
-                      style={[
-                        s.input,
-                        s.inputWithIcon,
-                        touched.confirm && errors.confirm ? s.inputErr : null,
-                      ]}
-                      placeholder="••••••••"
-                      placeholderTextColor="#94a3b8"
-                      value={values.confirm}
-                      onChangeText={handleChange("confirm")}
-                      onBlur={handleBlur("confirm")}
-                      secureTextEntry={hideConfirm}
-                    />
-                    <TouchableOpacity
-                      onPress={() => setHideConfirm(!hideConfirm)}
-                      style={s.eyeBtn}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <MaterialCommunityIcons
-                        name={hideConfirm ? "eye-off-outline" : "eye-outline"}
-                        size={22}
-                        color="#64748b"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                  {touched.confirm && errors.confirm ? <Text style={s.err}>{errors.confirm}</Text> : null}
-                </View>
-
-                <AppButton
-                  label="Create account"
-                  onPress={() => handleSubmit()}
-                  disabled={!isValid || isSubmitting}
-                  style={s.btn}
-                />
-
-                <Text style={s.footer}>
-                  Already have an account?
-                  <Text style={s.link} onPress={() => nav.navigate("Login" as never)}> Sign in</Text>
-                </Text>
-              </>
-            );
+        <SuccessPopup
+          visible={showPopup}
+          onClose={() => {
+            setShowPopup(false);
+            // @ts-ignore
+            nav.navigate("Login");
           }}
-        </Formik>
-      </View>
-
-      <SuccessPopup
-        visible={showPopup}
-        onClose={() => {
-          setShowPopup(false);
-          // @ts-ignore
-          nav.navigate("Login");
-        }}
-      />
-    </KeyboardAvoidingView>
+        />
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -188,7 +304,8 @@ const s = StyleSheet.create({
     backgroundColor: BG,
     justifyContent: "flex-start",
     alignItems: "center",
-    paddingTop: 60,
+    paddingTop: 16,
+    paddingBottom: 16,
     paddingHorizontal: 20,
   },
   card: {
@@ -215,7 +332,7 @@ const s = StyleSheet.create({
     height: 46,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: BLUE,         
+    borderColor: BLUE,
     backgroundColor: "#eef6ff",
     paddingHorizontal: 12,
     color: "#0b1220",
@@ -227,6 +344,18 @@ const s = StyleSheet.create({
   btn: { marginTop: 18 },
   footer: { textAlign: "center", color: BLUE, marginTop: 12 },
   link: { color: BLUE, fontWeight: "800" },
+  typeBtn: {
+    flex: 1,
+    padding: 10,
+    borderWidth: 1,
+    borderRadius: 10,
+    borderColor: "#cbd5f5",
+    alignItems: "center",
+  },
+  typeBtnActive: {
+    backgroundColor: "#eef6ff",
+    borderColor: BLUE,
+  },
 });
 
 const SuccessPopup = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
@@ -249,7 +378,10 @@ const SuccessPopup = ({ visible, onClose }: { visible: boolean; onClose: () => v
 const popupStyles = StyleSheet.create({
   overlay: {
     position: "absolute",
-    top: 0, left: 0, right: 0, bottom: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
@@ -264,7 +396,7 @@ const popupStyles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "900",
-    color: "#22c55e",     // أخضر
+    color: "#22c55e",
     marginBottom: 10,
   },
   msg: {
@@ -273,12 +405,12 @@ const popupStyles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
   },
-btn: {
-  backgroundColor: "#2a4dd9ff", 
-  paddingVertical: 10,
-  paddingHorizontal: 30,
-  borderRadius: 8,
-},
+  btn: {
+    backgroundColor: "#2a4dd9ff",
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+  },
   btnText: {
     color: "#fff",
     fontWeight: "700",

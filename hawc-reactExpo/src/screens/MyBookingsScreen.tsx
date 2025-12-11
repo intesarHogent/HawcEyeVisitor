@@ -2,10 +2,9 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import type { ResourceType } from "../types/env";
-import { collection, getDocs, deleteDoc, doc } from "firebase/firestore"; // ← NEW
+import { collection, getDocs, deleteDoc, doc, query, where } from "firebase/firestore";
 import { auth, db } from "../config/firebaseConfig";
-import { query, where } from "firebase/firestore";
-
+import { useIsFocused } from "@react-navigation/native";
 
 type Booking = {
   id: string;
@@ -36,44 +35,47 @@ const HOURS24 = 24 * 3600 * 1000;
 
 export default function MyBookingsScreen() {
   const [bookings, setBookings] = useState<Booking[]>([]);
-useEffect(() => {
-  let alive = true;
+  const isFocused = useIsFocused();
 
-  const fetchBookings = async () => {
-    try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        if (alive) setBookings([]);
-        return;
+  useEffect(() => {
+    if (!isFocused) return; // نعيد الجلب فقط لما الشاشة تكون مفعّلة
+
+    let alive = true;
+
+    const fetchBookings = async () => {
+      try {
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+          if (alive) setBookings([]);
+          return;
+        }
+
+        const q = query(
+          collection(db, "bookings"),
+          where("userId", "==", currentUser.uid)
+        );
+
+        const snap = await getDocs(q);
+
+        const list: Booking[] = snap.docs.map((d) => {
+          const data = d.data() as Omit<Booking, "id">;
+          return {
+            id: d.id,
+            ...data,
+          };
+        });
+
+        if (alive) setBookings(list);
+      } catch (err) {
+        console.log("Firestore bookings error:", err);
       }
+    };
 
-      const q = query(
-        collection(db, "bookings"),
-        where("userId", "==", currentUser.uid)
-      );
-
-      const snap = await getDocs(q);
-
-      const list: Booking[] = snap.docs.map((d) => {
-        const data = d.data() as Omit<Booking, "id">;
-        return {
-          id: d.id,
-          ...data,
-        };
-      });
-
-      if (alive) setBookings(list);
-    } catch (err) {
-      console.log("Firestore bookings error:", err);
-    }
-  };
-
-  fetchBookings();
-  return () => {
-    alive = false;
-  };
-}, []);
-
+    fetchBookings();
+    return () => {
+      alive = false;
+    };
+  }, [isFocused]);
 
   const now = Date.now();
 
@@ -93,7 +95,6 @@ useEffect(() => {
     setBookings((prev) => prev.filter((x) => x.id !== id));
     console.log("Canceled booking:", id);
 
-    // ← NEW: حذف الحجز من Firestore
     try {
       await deleteDoc(doc(db, "bookings", id));
     } catch (err) {

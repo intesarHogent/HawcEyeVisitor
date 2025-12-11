@@ -1,9 +1,18 @@
 // store/index.ts
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { persistReducer, persistStore, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from "redux-persist";
-import auth from "./slices/auth";
-import bookingDraft from "./slices/bookingDraft";
+import {
+  persistReducer,
+  persistStore,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from "redux-persist";
+
+import bookingDraft from "./slices/bookingDraft"; // ← بقي فقط هذا
 
 // إعدادات الحفظ
 const persistConfig = {
@@ -12,9 +21,8 @@ const persistConfig = {
   storage: AsyncStorage,
 };
 
-// يجمع الشرائح المطلوبة فقط
+// يجمع الشرائح المطلوبة فقط (بدون auth)
 const rootReducer = combineReducers({
-  auth,
   bookingDraft,
 });
 
@@ -26,7 +34,6 @@ export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      // منع تحذيرات serialize لأفعال redux-persist
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },

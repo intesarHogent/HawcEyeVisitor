@@ -3,30 +3,51 @@ import { View, Text, StyleSheet } from "react-native";
 import AppButton from "../components/AppButton";
 import MaterialCommunityIcons from "@expo/vector-icons/build/MaterialCommunityIcons";
 
-// Redux
-import { useAppDispatch, useAppSelector } from "../hooks/reduxHooks";
-import { logout } from "../store/slices/auth";
-import { resetAll } from "../store/slices/bookingDraft";
+import { auth, db } from "../config/firebaseConfig";
+import { signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
-import { auth } from "../config/firebaseConfig";              // ← NEW
-import { signOut } from "firebase/auth";                // ← NEW
+import { useEffect, useState } from "react";
+
+// NEW: Redux لحذف مسودات الحجز عند تسجيل الخروج
+import { useAppDispatch } from "../hooks/reduxHooks";
+import { resetAll } from "../store/slices/bookingDraft";
 
 const BLUE = "#0d7ff2";
 
 export default function ProfileScreen() {
-  // المستخدم من الريدكس بدل JSON
-  const user = useAppSelector((st) => st.auth.user);
+  const [fullName, setFullName] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+
   const dispatch = useAppDispatch();
+
+  // تحميل بيانات المستخدم من Firestore
+  useEffect(() => {
+    const loadProfile = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      setEmail(user.email || "");
+
+      const snap = await getDoc(doc(db, "users", user.uid));
+      if (snap.exists()) {
+        const d = snap.data() as any;
+        setFullName(d.fullName || "");
+      }
+    };
+
+    loadProfile();
+  }, []);
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);                               // ← NEW
+      await signOut(auth);
     } catch (err) {
-      console.log("Firebase logout error:", err);        // ← NEW
+      console.log("Logout error:", err);
+    } finally {
+      // مهم: مسح كل مسودات الحجز المحفوظة في Redux + AsyncStorage
+      dispatch(resetAll());
     }
-
-    dispatch(logout());                                   // يبقى كما هو
-    dispatch(resetAll());
   };
 
   return (
@@ -39,8 +60,8 @@ export default function ProfileScreen() {
           color={BLUE}
           style={{ marginBottom: 12 }}
         />
-        <Text style={s.name}>{user?.name ?? "—"}</Text>
-        <Text style={s.email}>{user?.email ?? "—"}</Text>
+        <Text style={s.name}>{fullName || "—"}</Text>
+        <Text style={s.email}>{email || "—"}</Text>
       </View>
 
       {/* زر تسجيل الخروج */}
@@ -54,7 +75,12 @@ export default function ProfileScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9fafb", alignItems: "center", paddingTop: 60, position: "relative" },
+  container: {
+    flex: 1,
+    backgroundColor: "#f9fafb",
+    alignItems: "center",
+    paddingTop: 60,
+  },
   card: {
     alignItems: "center",
     backgroundColor: "#fff",
@@ -70,8 +96,4 @@ const s = StyleSheet.create({
   },
   name: { fontSize: 30, fontWeight: "800", color: "#0b1220", marginBottom: 6 },
   email: { fontSize: 20, color: "#64748b" },
-  tagline: { marginBottom: 6, fontSize: 16, fontWeight: "700", color: BLUE, letterSpacing: 0.4, textAlign: "center" },
-  tipArea: { alignItems: "center", marginBottom: 24, width: "100%" },
-  tipCard: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#eaf2ff", borderRadius: 14, paddingVertical: 10, paddingHorizontal: 14, width: "90%" },
-  tipText: { color: BLUE, fontSize: 14, fontWeight: "500", flex: 1 },
 });

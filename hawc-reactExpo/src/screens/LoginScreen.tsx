@@ -9,19 +9,17 @@ import {
   Platform,
   TouchableOpacity,
   Animated,
-  Alert,              // ← NEW
+  Alert,
 } from "react-native";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import AppButton from "../components/AppButton";
-import { useAppDispatch } from "../hooks/reduxHooks";
-import { login } from "../store/slices/auth";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-// ← NEW: استيراد فايربيس أوث
-import { auth } from "../config/firebaseConfig";
+import { auth, db } from "../config/firebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
 const BLUE = "#0d7ff2";
 const BG = "#f9fafb";
@@ -33,7 +31,6 @@ const schema = Yup.object({
 });
 
 export default function LoginScreen() {
-  const dispatch = useAppDispatch();
   const nav = useNavigation();
   const [hidePass, setHidePass] = useState(true);
 
@@ -74,24 +71,21 @@ export default function LoginScreen() {
         <Formik
           initialValues={{ email: "", password: "" }}
           validationSchema={schema}
-          // ← CHANGED: استخدام Firebase Auth بدل تسجيل دخول وهمي
           onSubmit={async (v, { setSubmitting }) => {
             try {
+              // تسجيل الدخول عبر Firebase
               const cred = await signInWithEmailAndPassword(auth, v.email, v.password);
-
               const user = cred.user;
 
-              // إبقاء الريدوكس مستعمل لكن مع بيانات حقيقية من Firebase
-              dispatch(
-                login({
-                  id: user.uid,
-                  name: user.displayName || v.email.split("@")[0],
-                  email: user.email || v.email,
-                })
-              );
+              // جلب نوع المستخدم من Firestore (standard / professional)
+              const snap = await getDoc(doc(db, "users", user.uid));
+              const userData = snap.exists() ? snap.data() : null;
+              const userType = (userData?.userType as "standard" | "professional") || "standard";
 
-              // إذا عندك ناڤيجيتور يعتمد على حالة الأوث، يكفي هذا.
-              // ولو حاب، تقدر تضيف:
+              console.log("Logged in user type:", userType, "data:", userData);
+
+              // التنقّل: لو عندك onAuthStateChanged في الـ Root يكفي تسجيل الدخول فقط
+              // وإلا يمكنك استخدام reset حسب نافيجيتورك:
               // nav.reset({ index: 0, routes: [{ name: "Main" as never }] });
 
             } catch (error: any) {
@@ -215,7 +209,7 @@ const s = StyleSheet.create({
   },
   titleWrap: {
     position: "absolute",
-    top: -40, // ← رفع الشعار للأعلى أكثر (زد السالب إذا تريد أقرب للهيدر)
+    top: -40,
     left: 0,
     right: 0,
     alignItems: "center",
@@ -253,8 +247,8 @@ const s = StyleSheet.create({
     height: 46,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: BLUE,          // ← كان #dbe4f3
-    backgroundColor: "#eef6ff", // ← كان #f1f5f9
+    borderColor: BLUE,
+    backgroundColor: "#eef6ff",
     paddingHorizontal: 12,
     color: "#0b1220",
   },

@@ -1,27 +1,22 @@
 // src/screens/BookingDetailScreen.tsx
 import React, { useMemo, useRef, useEffect } from "react";
 import { View, Text, StyleSheet, Image, ScrollView, Alert, Animated } from "react-native";
-import { useRoute, useNavigation, StackActions } from "@react-navigation/native";
+import { useRoute, useNavigation } from "@react-navigation/native";
 import type { RootStackNavProps } from "../navigation/types";
 import type { Resource } from "../types/env";
 import BookingButton from "../components/AppButton";
-import { useAppDispatch, useAppSelector } from "../hooks/reduxHooks";
 
 const CTA_H = 72;
-
 
 export default function BookingDetailScreen() {
   const {
     params: { data, date, start, end },
   } = useRoute<RootStackNavProps<"BookingDetail">["route"]>();
+
   const navigation = useNavigation();
-  const dispatch = useAppDispatch();
 
   const item = data as Resource;
   const pricePerHour = (item as any).pricePerHour ?? 0;
-
-  const user = useAppSelector((state) => state.auth.user);
-
 
   // ===== ANIMATION للتحذير =====
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -43,7 +38,6 @@ export default function BookingDetailScreen() {
   }, [fadeAnim, slideAnim]);
   // =============================
 
-  // دالة تحسب وقت البداية والنهاية لتحديد عدد الساعات
   const buildUTC = (d?: string, hm?: string) => {
     if (!d || !hm) return null;
     const [hh, mm] = hm.split(":").map((n) => parseInt(String(n), 10));
@@ -53,10 +47,8 @@ export default function BookingDetailScreen() {
     return dt;
   };
 
-  // تحقق من الاكتمال
   const hasSelection = !!(date && start && end);
 
-  // عدد الساعات
   const hoursInt = useMemo(() => {
     if (!hasSelection) return null;
     const s = buildUTC(date, start);
@@ -67,7 +59,6 @@ export default function BookingDetailScreen() {
     return diffMs / 3_600_000;
   }, [hasSelection, date, start, end]);
 
-  // الإجمالي
   const total = useMemo(
     () => (hoursInt == null ? null : hoursInt * pricePerHour),
     [hoursInt, pricePerHour]
@@ -75,39 +66,17 @@ export default function BookingDetailScreen() {
 
   const canBook = !!(hasSelection && pricePerHour > 0 && hoursInt != null);
 
-  // helper للتداخل بين فترتين
-  const overlaps = (
-    aStart: Date,
-    aEnd: Date,
-    bStartIso: string,
-    bEndIso: string
-  ) => {
-    const bStart = new Date(bStartIso);
-    const bEnd = new Date(bEndIso);
-    return aStart.getTime() < bEnd.getTime() && bStart.getTime() < aEnd.getTime();
-  };
-
-  // عند الحجز
-  const onBook = () => {
+ const onBook = () => {
   if (!canBook || !date || !start || !end || total == null) return;
 
-  if (!user) {
-    Alert.alert("Not logged in", "Please log in first.");
-    return;
-  }
-
-  // @ts-ignore
-  navigation.navigate("Payment", {
+     navigation.navigate("Payment", {
     data: item,
     date,
     start,
     end,
     total,
-    userId: user.id,
-    userEmail: user.email,
   });
 };
-
 
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
@@ -166,10 +135,7 @@ export default function BookingDetailScreen() {
         {((item as any).type === "parking") && (
           <Section title="Parking Info">
             <Row label="Covered" value={(item as any).covered ? "Yes" : "No"} />
-            <Row
-              label="EV charger"
-              value={(item as any).evCharger ? "Yes" : "No"}
-            />
+            <Row label="EV charger" value={(item as any).evCharger ? "Yes" : "No"} />
           </Section>
         )}
 
@@ -191,7 +157,6 @@ export default function BookingDetailScreen() {
       </ScrollView>
 
       <View style={s.ctaWrap}>
-        {/* تحذير الإلغاء قبل 24 ساعة */}
         <Animated.View
           style={{
             opacity: fadeAnim,
@@ -217,7 +182,6 @@ export default function BookingDetailScreen() {
   );
 }
 
-// تنظيم الأقسام
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={s.section}>
@@ -227,7 +191,6 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-// صف داخل القسم
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <View style={s.row}>
