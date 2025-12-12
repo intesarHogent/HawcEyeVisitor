@@ -26,9 +26,12 @@ export default function PaymentScreen() {
   const navigation = useNavigation<RootStackNavProps<"Payment">["navigation"]>();
 
   const { data, date, start, end, total } = params;
+  
+  const [invoiceApproval, setInvoiceApproval] = useState<
+  "none" | "pending" | "approved" | "rejected">("none");
 
   // نوع المستخدم (من Firestore)
-  const [userType, setUserType] = useState<"standard" | "professional">("standard");
+  const [userType, setUserType] = useState<"standard" | "professional" | "admin">("standard");
   // لمنع الضغط المتكرر على زر Pay later
   const [invoiceBusy, setInvoiceBusy] = useState(false);
 
@@ -41,9 +44,11 @@ export default function PaymentScreen() {
       try {
         const snap = await getDoc(doc(db, "users", uid));
         if (snap.exists()) {
-          const d = snap.data() as any;
-          setUserType(d.userType || "standard");
-        }
+        const d = snap.data() as any;
+        setUserType(d.userType || "standard");
+        setInvoiceApproval(d.invoiceApproval || "none");
+      }
+
       } catch (err) {
         console.log("Failed to load userType:", err);
       }
@@ -299,21 +304,49 @@ export default function PaymentScreen() {
         </View>
 
         {/* STANDARD USER → Mollie only */}
-        {userType === "standard" && (
-          <BookingButton label="Pay with Mollie" onPress={handleContinue} />
-        )}
-
-        {/* PROFESSIONAL USER → Mollie + Invoice */}
-        {userType === "professional" && (
-          <>
+       {/* STANDARD USER → Mollie only */}
+          {userType === "standard" && (
             <BookingButton label="Pay with Mollie" onPress={handleContinue} />
-            <BookingButton
-              label="Pay later (invoice)"
-              onPress={handleInvoiceLater}
-              style={{ marginTop: 12 }}
-            />
-          </>
-        )}
+          )}
+
+          {/* PROFESSIONAL USER → Mollie + Invoice (حسب الموافقة) */}
+          {userType === "professional" && (
+            <>
+              <BookingButton label="Pay with Mollie" onPress={handleContinue} />
+
+              {invoiceApproval === "approved" && (
+                <BookingButton
+                  label="Pay later (invoice)"
+                  onPress={handleInvoiceLater}
+                  style={{ marginTop: 12 }}
+                />
+              )}
+
+              {invoiceApproval === "pending" && (
+                <Text style={{ marginTop: 12, color: "#64748b", fontSize: 12 }}>
+                  Invoice payment is pending approval.
+                </Text>
+              )}
+
+              {invoiceApproval === "rejected" && (
+                <Text style={{ marginTop: 12, color: "#dc2626", fontSize: 12 }}>
+                  Your invoice request was rejected. You must pay online to complete this booking.
+                </Text>
+              )}
+            </>
+          )}
+
+          {/* ADMIN USER → Mollie + Invoice بدون شروط */}
+          {userType === "admin" && (
+            <>
+              <BookingButton label="Pay with Mollie" onPress={handleContinue} />
+              <BookingButton
+                label="Pay later (invoice)"
+                onPress={handleInvoiceLater}
+                style={{ marginTop: 12 }}
+              />
+            </>
+          )}
       </ScrollView>
     </View>
   );

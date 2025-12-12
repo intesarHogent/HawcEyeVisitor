@@ -9,7 +9,9 @@ import BookingCalendarScreen from "../screens/BookingCalendarScreen";
 import AboutScreen from "../screens/AboutScreen";
 import PaymentScreen from "../screens/PaymentScreen";
 import PaymentWebView from "../screens/PaymentWebView";
-import BookingSuccessScreen from "../screens/BookingSuccess"; // ← NEW
+import BookingSuccessScreen from "../screens/BookingSuccess";
+import AdminInvoiceScreen from "../screens/AdminInvoiceScreen";
+
 
 const RootStack = createStackNavigator<RootStackParamList>();
 
@@ -81,6 +83,12 @@ const RootStackNavigator = () => {
         component={BookingSuccessScreen}       // ← NEW
         options={{ title: "Booking confirmed", headerBackTitle: "" }} // ← NEW
       />
+      <RootStack.Screen
+        name="AdminInvoice"
+        component={AdminInvoiceScreen}
+        options={{ title: "Invoice approvals", headerBackTitle: "" }}
+      />
+
     </RootStack.Navigator>
   );
 };

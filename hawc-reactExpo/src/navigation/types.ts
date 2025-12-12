@@ -8,13 +8,15 @@ export type RootStackParamList = {
   BookingCalendar: { type: ResourceType };
   BookingList: { type: ResourceType; date: string; start: string; hours: number };
   BookingDetail: { data: Resource; date?: string; start?: string; end?: string };
+  AdminInvoice: undefined;
+
 
   Payment: {
     data: Resource;
     date: string;
     start: string;
     end: string;
-    total: number;          // فقط هذا، userId / userEmail تؤخذ من auth.currentUser
+    total: number;       
   };
 
   PaymentWebView: {

@@ -8,8 +8,9 @@ import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
 import { useEffect, useState } from "react";
+import { useNavigation } from "@react-navigation/native";
 
-// NEW: Redux لحذف مسودات الحجز عند تسجيل الخروج
+// Redux
 import { useAppDispatch } from "../hooks/reduxHooks";
 import { resetAll } from "../store/slices/bookingDraft";
 
@@ -18,7 +19,9 @@ const BLUE = "#0d7ff2";
 export default function ProfileScreen() {
   const [fullName, setFullName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
+  const [isAdmin, setIsAdmin] = useState(false);
 
+  const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
 
   // تحميل بيانات المستخدم من Firestore
@@ -33,6 +36,7 @@ export default function ProfileScreen() {
       if (snap.exists()) {
         const d = snap.data() as any;
         setFullName(d.fullName || "");
+        setIsAdmin(d.userType === "admin");
       }
     };
 
@@ -45,7 +49,6 @@ export default function ProfileScreen() {
     } catch (err) {
       console.log("Logout error:", err);
     } finally {
-      // مهم: مسح كل مسودات الحجز المحفوظة في Redux + AsyncStorage
       dispatch(resetAll());
     }
   };
@@ -64,11 +67,37 @@ export default function ProfileScreen() {
         <Text style={s.email}>{email || "—"}</Text>
       </View>
 
+      {/* زر الأدمن */}
+      {isAdmin && (
+        <AppButton
+          label="Admin – Invoice approvals"
+          onPress={() => {
+  navigation.navigate("Home", {
+    screen: "AdminInvoice",
+  });
+}}
+
+
+
+          style={{
+            width: "90%",
+            height: 64,
+            borderRadius: 18,
+            marginTop: 24,
+          }}
+        />
+      )}
+
       {/* زر تسجيل الخروج */}
       <AppButton
         label="Log out"
         onPress={handleLogout}
-        style={{ width: "90%", height: 64, borderRadius: 18, marginTop: 36 }}
+        style={{
+          width: "90%",
+          height: 64,
+          borderRadius: 18,
+          marginTop: 24,
+        }}
       />
     </View>
   );
@@ -94,6 +123,14 @@ const s = StyleSheet.create({
     shadowRadius: 12,
     elevation: 3,
   },
-  name: { fontSize: 30, fontWeight: "800", color: "#0b1220", marginBottom: 6 },
-  email: { fontSize: 20, color: "#64748b" },
+  name: {
+    fontSize: 30,
+    fontWeight: "800",
+    color: "#0b1220",
+    marginBottom: 6,
+  },
+  email: {
+    fontSize: 20,
+    color: "#64748b",
+  },
 });

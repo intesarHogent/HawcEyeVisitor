@@ -20,6 +20,7 @@ import { auth, db } from "../config/firebaseConfig";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 
+
 const BLUE = "#0d7ff2";
 const BG = "#f9fafb";
 
@@ -65,18 +66,19 @@ export default function RegisterScreen() {
               try {
                 const cred = await createUserWithEmailAndPassword(auth, v.email, v.password);
 
-                const userData: any = {
+               const userData: any = {
                   fullName: v.fullName,
                   email: v.email,
                   userType: userType,
+                  invoiceApproval: userType === "professional" ? "pending" : "none",
                   createdAt: new Date().toISOString(),
                 };
 
                 if (userType === "professional") {
                   userData.companyName = v.companyName;
                   userData.vat = v.vat;
-                  userData.canInvoice = true;
                 }
+
 
                 await setDoc(doc(db, "users", cred.user.uid), userData);
 
