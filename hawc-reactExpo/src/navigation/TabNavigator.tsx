@@ -1,5 +1,5 @@
 // src/navigation/TabNavigator.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { TabParamsList } from "./types";
@@ -7,12 +7,53 @@ import RootStackNavigator from "./RootStackNavigator";
 import MyBookingsScreen from "../screens/MyBookingsScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 
+// Firebase
+import { auth, db } from "../config/firebaseConfig";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, collection, onSnapshot, query, where } from "firebase/firestore";
+
 const Tab = createBottomTabNavigator<TabParamsList>();
 
 export default function TabNavigator() {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  // 1) تحديد هل المستخدم Admin (بعد ما Firebase يكمّل restore للجلسة)
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setIsAdmin(false);
+        setPendingCount(0);
+        return;
+      }
+
+      const snap = await getDoc(doc(db, "users", user.uid));
+      const d = snap.exists()
+        ? (snap.data() as { userType?: "standard" | "professional" | "admin" })
+        : undefined;
+
+      setIsAdmin(d?.userType === "admin");
+    });
+
+    return unsub;
+  }, []);
+
+  // 2) Badge: عدد طلبات الفاتورة pending (فقط للأدمن)
+  useEffect(() => {
+    if (!isAdmin) {
+      setPendingCount(0);
+      return;
+    }
+
+    const q = query(collection(db, "users"), where("invoiceApproval", "==", "pending"));
+    const unsub = onSnapshot(q, (snap) => setPendingCount(snap.size));
+
+    return unsub;
+  }, [isAdmin]);
+
   return (
     <Tab.Navigator
-      screenOptions={{      
+      screenOptions={{
         tabBarActiveTintColor: "#0d7ff2",
       }}
     >
@@ -27,6 +68,7 @@ export default function TabNavigator() {
           title: "Home",
         }}
       />
+
       <Tab.Screen
         name="MyBookings"
         component={MyBookingsScreen}
@@ -37,6 +79,23 @@ export default function TabNavigator() {
           ),
         }}
       />
+
+      {isAdmin && (
+        <Tab.Screen
+          name="AdminInvoice"
+          component={RootStackNavigator}
+          options={{
+            headerShown: false,
+            title: "Admin",
+            tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="shield-check" color={color} size={size} />
+            ),
+          }}
+          initialParams={{ screen: "AdminInvoice" }}
+        />
+      )}
+
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}

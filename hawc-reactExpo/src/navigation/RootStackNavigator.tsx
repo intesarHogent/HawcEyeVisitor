@@ -12,13 +12,21 @@ import PaymentWebView from "../screens/PaymentWebView";
 import BookingSuccessScreen from "../screens/BookingSuccess";
 import AdminInvoiceScreen from "../screens/AdminInvoiceScreen";
 
-
 const RootStack = createStackNavigator<RootStackParamList>();
 
-const RootStackNavigator = () => {
+type Props = {
+  route?: { params?: { screen?: keyof RootStackParamList } };
+};
+
+const RootStackNavigator = ({ route }: Props) => {
+  const initial =
+    route?.params?.screen && route.params.screen === "AdminInvoice"
+      ? "AdminInvoice"
+      : "ResourceBrowse";
+
   return (
     <RootStack.Navigator
-      initialRouteName="ResourceBrowse"
+      initialRouteName={initial}
       screenOptions={{ headerShown: true }}
     >
       <RootStack.Screen
@@ -79,16 +87,16 @@ const RootStackNavigator = () => {
       />
 
       <RootStack.Screen
-        name="BookingSuccess"                  // ← NEW
-        component={BookingSuccessScreen}       // ← NEW
-        options={{ title: "Booking confirmed", headerBackTitle: "" }} // ← NEW
+        name="BookingSuccess"
+        component={BookingSuccessScreen}
+        options={{ title: "Booking confirmed", headerBackTitle: "" }}
       />
+
       <RootStack.Screen
         name="AdminInvoice"
         component={AdminInvoiceScreen}
         options={{ title: "Invoice approvals", headerBackTitle: "" }}
       />
-
     </RootStack.Navigator>
   );
 };

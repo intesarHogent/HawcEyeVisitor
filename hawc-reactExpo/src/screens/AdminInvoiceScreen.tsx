@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from "react-native";
-import { collection, getDocs, updateDoc, doc, getDoc } from "firebase/firestore";
+import { collection, onSnapshot, query, where, updateDoc, doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../config/firebaseConfig";
 
 type User = {
@@ -39,40 +39,45 @@ export default function AdminInvoiceScreen() {
     checkAdmin();
   }, []);
 
-  const loadPending = async () => {
-    setLoading(true);
-    const snap = await getDocs(collection(db, "users"));
-
-    const list: User[] = [];
-    snap.forEach((d) => {
-      const data = d.data() as any;
-      if (data.invoiceApproval === "pending") {
-        list.push({
-          id: d.id,
-          fullName: data.fullName,
-          email: data.email,
-          companyName: data.companyName,
-          vat: data.vat,
-          invoiceApproval: data.invoiceApproval,
-        });
-      }
-    });
-
-    setUsers(list);
-    setLoading(false);
-  };
-
+  // ✅ Listen فقط على pending (حتى البادج يختفي/يتحدث مباشرة بدون loadPending)
   useEffect(() => {
-    if (allowed) loadPending();
+    if (!allowed) return;
+
+    setLoading(true);
+    const q = query(collection(db, "users"), where("invoiceApproval", "==", "pending"));
+
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const list: User[] = snap.docs.map((d) => {
+          const data = d.data() as any;
+          return {
+            id: d.id,
+            fullName: data.fullName,
+            email: data.email,
+            companyName: data.companyName,
+            vat: data.vat,
+            invoiceApproval: data.invoiceApproval,
+          };
+        });
+
+        setUsers(list);
+        setLoading(false);
+      },
+      () => {
+        setLoading(false);
+        Alert.alert("Error", "Could not load pending requests");
+      }
+    );
+
+    return unsub;
   }, [allowed]);
 
   const updateStatus = async (userId: string, status: "approved" | "rejected") => {
     try {
-      await updateDoc(doc(db, "users", userId), {
-        invoiceApproval: status,
-      });
+      await updateDoc(doc(db, "users", userId), { invoiceApproval: status });
       Alert.alert("Success", `Invoice ${status}`);
-      loadPending();
+      // لا تحتاج reload — onSnapshot يحدث القائمة والبادج تلقائياً
     } catch {
       Alert.alert("Error", "Could not update status");
     }
@@ -88,7 +93,7 @@ export default function AdminInvoiceScreen() {
     );
   }
 
-  // ⏳ تحميل
+  // ⏳ تحميل صلاحية
   if (allowed === null) {
     return (
       <View style={s.container}>
@@ -106,13 +111,16 @@ export default function AdminInvoiceScreen() {
         data={users}
         keyExtractor={(item) => item.id}
         refreshing={loading}
-        onRefresh={loadPending}
+        onRefresh={() => {}}
+        ListEmptyComponent={
+          !loading ? <Text style={s.empty}>No pending requests.</Text> : null
+        }
         renderItem={({ item }) => (
           <View style={s.card}>
             <Text style={s.name}>{item.fullName}</Text>
             <Text style={s.text}>{item.email}</Text>
-            {item.companyName && <Text style={s.text}>{item.companyName}</Text>}
-            {item.vat && <Text style={s.text}>VAT: {item.vat}</Text>}
+            {item.companyName ? <Text style={s.text}>{item.companyName}</Text> : null}
+            {item.vat ? <Text style={s.text}>VAT: {item.vat}</Text> : null}
 
             <View style={s.actions}>
               <TouchableOpacity
@@ -139,6 +147,7 @@ export default function AdminInvoiceScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: "#fff" },
   title: { fontSize: 22, fontWeight: "800", marginBottom: 16 },
+  empty: { color: "#475569", marginTop: 12 },
   card: {
     backgroundColor: "#f8fafc",
     padding: 14,

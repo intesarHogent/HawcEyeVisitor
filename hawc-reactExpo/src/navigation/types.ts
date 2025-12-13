@@ -10,13 +10,12 @@ export type RootStackParamList = {
   BookingDetail: { data: Resource; date?: string; start?: string; end?: string };
   AdminInvoice: undefined;
 
-
   Payment: {
     data: Resource;
     date: string;
     start: string;
     end: string;
-    total: number;       
+    total: number;
   };
 
   PaymentWebView: {
@@ -52,6 +51,9 @@ export type TabParamsList = {
   Home: undefined;
   MyBookings: undefined;
   Profile: undefined;
+
+  // NEW: Admin tab route (يفتح RootStackNavigator ويعمل redirect لشاشة AdminInvoice)
+  AdminInvoice: { screen?: keyof RootStackParamList } | undefined;
 };
 
 export type RootStackNavProps<T extends keyof RootStackParamList> =
