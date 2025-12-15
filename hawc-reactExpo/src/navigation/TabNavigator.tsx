@@ -6,8 +6,6 @@ import type { TabParamsList } from "./types";
 import RootStackNavigator from "./RootStackNavigator";
 import MyBookingsScreen from "../screens/MyBookingsScreen";
 import ProfileScreen from "../screens/ProfileScreen";
-
-// Firebase
 import { auth, db } from "../config/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, collection, onSnapshot, query, where } from "firebase/firestore";
@@ -18,7 +16,6 @@ export default function TabNavigator() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
 
-  // 1) تحديد هل المستخدم Admin (بعد ما Firebase يكمّل restore للجلسة)
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -38,7 +35,6 @@ export default function TabNavigator() {
     return unsub;
   }, []);
 
-  // 2) Badge: عدد طلبات الفاتورة pending (فقط للأدمن)
   useEffect(() => {
     if (!isAdmin) {
       setPendingCount(0);
@@ -92,7 +88,6 @@ export default function TabNavigator() {
               <MaterialCommunityIcons name="shield-check" color={color} size={size} />
             ),
           }}
-          initialParams={{ screen: "AdminInvoice" }}
         />
       )}
 

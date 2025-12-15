@@ -14,21 +14,9 @@ import AdminInvoiceScreen from "../screens/AdminInvoiceScreen";
 
 const RootStack = createStackNavigator<RootStackParamList>();
 
-type Props = {
-  route?: { params?: { screen?: keyof RootStackParamList } };
-};
-
-const RootStackNavigator = ({ route }: Props) => {
-  const initial =
-    route?.params?.screen && route.params.screen === "AdminInvoice"
-      ? "AdminInvoice"
-      : "ResourceBrowse";
-
+const RootStackNavigator = () => {
   return (
-    <RootStack.Navigator
-      initialRouteName={initial}
-      screenOptions={{ headerShown: true }}
-    >
+    <RootStack.Navigator screenOptions={{ headerShown: true }}>
       <RootStack.Screen
         name="ResourceBrowse"
         component={ResourceBrowse}
