@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { collection, onSnapshot, query, where, updateDoc, doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../config/firebaseConfig";
 
@@ -17,7 +18,6 @@ export default function AdminInvoiceScreen() {
   const [loading, setLoading] = useState(false);
   const [allowed, setAllowed] = useState<boolean | null>(null);
 
-  // 🔐 تحقق الأدمن
   useEffect(() => {
     const checkAdmin = async () => {
       const uid = auth.currentUser?.uid;
@@ -39,7 +39,6 @@ export default function AdminInvoiceScreen() {
     checkAdmin();
   }, []);
 
-  // ✅ Listen فقط على pending (حتى البادج يختفي/يتحدث مباشرة بدون loadPending)
   useEffect(() => {
     if (!allowed) return;
 
@@ -77,74 +76,75 @@ export default function AdminInvoiceScreen() {
     try {
       await updateDoc(doc(db, "users", userId), { invoiceApproval: status });
       Alert.alert("Success", `Invoice ${status}`);
-      // لا تحتاج reload — onSnapshot يحدث القائمة والبادج تلقائياً
     } catch {
       Alert.alert("Error", "Could not update status");
     }
   };
 
-  // 🚫 مو أدمن
   if (allowed === false) {
     return (
-      <View style={s.container}>
-        <Text style={s.title}>Access denied</Text>
-        <Text>You are not allowed to view this page.</Text>
-      </View>
+      <SafeAreaView style={s.safe} edges={["top", "left", "right"]}>
+        <View style={s.container}>
+          <Text style={s.title}>Access denied</Text>
+          <Text>You are not allowed to view this page.</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
-  // ⏳ تحميل صلاحية
   if (allowed === null) {
     return (
-      <View style={s.container}>
-        <Text>Loading...</Text>
-      </View>
+      <SafeAreaView style={s.safe} edges={["top", "left", "right"]}>
+        <View style={s.container}>
+          <Text>Loading...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
-  // ✅ أدمن
   return (
-    <View style={s.container}>
-      <Text style={s.title}>Invoice approvals</Text>
+    <SafeAreaView style={s.safe} edges={["top", "left", "right"]}>
+      <View style={s.container}>
+        <Text style={s.title}>Invoice approvals</Text>
 
-      <FlatList
-        data={users}
-        keyExtractor={(item) => item.id}
-        refreshing={loading}
-        onRefresh={() => {}}
-        ListEmptyComponent={
-          !loading ? <Text style={s.empty}>No pending requests.</Text> : null
-        }
-        renderItem={({ item }) => (
-          <View style={s.card}>
-            <Text style={s.name}>{item.fullName}</Text>
-            <Text style={s.text}>{item.email}</Text>
-            {item.companyName ? <Text style={s.text}>{item.companyName}</Text> : null}
-            {item.vat ? <Text style={s.text}>VAT: {item.vat}</Text> : null}
+        <FlatList
+          data={users}
+          keyExtractor={(item) => item.id}
+          refreshing={loading}
+          onRefresh={() => {}}
+          ListEmptyComponent={!loading ? <Text style={s.empty}>No pending requests.</Text> : null}
+          renderItem={({ item }) => (
+            <View style={s.card}>
+              <Text style={s.name}>{item.fullName}</Text>
+              <Text style={s.text}>{item.email}</Text>
+              {item.companyName ? <Text style={s.text}>{item.companyName}</Text> : null}
+              {item.vat ? <Text style={s.text}>VAT: {item.vat}</Text> : null}
 
-            <View style={s.actions}>
-              <TouchableOpacity
-                style={[s.btn, s.approve]}
-                onPress={() => updateStatus(item.id, "approved")}
-              >
-                <Text style={s.btnText}>Approve</Text>
-              </TouchableOpacity>
+              <View style={s.actions}>
+                <TouchableOpacity
+                  style={[s.btn, s.approve]}
+                  onPress={() => updateStatus(item.id, "approved")}
+                >
+                  <Text style={s.btnText}>Approve</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[s.btn, s.reject]}
-                onPress={() => updateStatus(item.id, "rejected")}
-              >
-                <Text style={s.btnText}>Reject</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.btn, s.reject]}
+                  onPress={() => updateStatus(item.id, "rejected")}
+                >
+                  <Text style={s.btnText}>Reject</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        )}
-      />
-    </View>
+          )}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: "#fff" },
   container: { flex: 1, padding: 16, backgroundColor: "#fff" },
   title: { fontSize: 22, fontWeight: "800", marginBottom: 16 },
   empty: { color: "#475569", marginTop: 12 },

@@ -20,7 +20,6 @@ const BLUE = "#0d7ff2";
 const RED = "#ef4444";
 const GREY = "#94a3b8";
 
-// formatter UTC "YYYY-MM-DD HH:mm"
 const fmt = (iso: string) => {
   const d = new Date(iso);
   const Y = d.getUTCFullYear();
@@ -38,7 +37,7 @@ export default function MyBookingsScreen() {
   const isFocused = useIsFocused();
 
   useEffect(() => {
-    if (!isFocused) return; // نعيد الجلب فقط لما الشاشة تكون مفعّلة
+    if (!isFocused) return; 
 
     let alive = true;
 

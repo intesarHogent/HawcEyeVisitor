@@ -2,14 +2,10 @@
 import { View, Text, StyleSheet } from "react-native";
 import AppButton from "../components/AppButton";
 import MaterialCommunityIcons from "@expo/vector-icons/build/MaterialCommunityIcons";
-
 import { auth, db } from "../config/firebaseConfig";
 import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-
 import { useEffect, useState } from "react";
-
-// Redux
 import { useAppDispatch } from "../hooks/reduxHooks";
 import { resetAll } from "../store/slices/bookingDraft";
 
@@ -21,7 +17,6 @@ export default function ProfileScreen() {
 
   const dispatch = useAppDispatch();
 
-  // تحميل بيانات المستخدم من Firestore
   useEffect(() => {
     const loadProfile = async () => {
       const user = auth.currentUser;
@@ -51,7 +46,6 @@ export default function ProfileScreen() {
 
   return (
     <View style={s.container}>
-      {/* بطاقة المستخدم */}
       <View style={s.card}>
         <MaterialCommunityIcons
           name="account-circle"
@@ -63,7 +57,6 @@ export default function ProfileScreen() {
         <Text style={s.email}>{email || "—"}</Text>
       </View>
 
-      {/* زر تسجيل الخروج */}
       <AppButton
         label="Log out"
         onPress={handleLogout}
@@ -77,7 +70,6 @@ export default function ProfileScreen() {
     </View>
   );
 }
-
 const s = StyleSheet.create({
   container: {
     flex: 1,

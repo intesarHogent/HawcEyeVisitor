@@ -16,16 +16,14 @@ const DEFAULT_DRAFT = { date: "", start: null as string | null, hours: 1 };
 
 export default function BookingCalendarScreen() {
   const navigation = useNavigation<RootStackNavProps<"BookingCalendar">["navigation"]>();
-  const { params: { type } } = useRoute<RootStackNavProps<"BookingCalendar">["route"]>(); // 'room' | 'car' | 'parking'
+  const { params: { type } } = useRoute<RootStackNavProps<"BookingCalendar">["route"]>();
 
   const dispatch = useAppDispatch();
 
-  // ثبّت نوع المورد داخل الريدكس
   useEffect(() => {
     dispatch(setType(type));
   }, [type, dispatch]);
 
-  // اقرأ الجذر أولًا ثم اشتق مسودة هذا النوع مع فولباك آمن
   const draftRoot = useAppSelector(s => s.bookingDraft);
   const draftForType = (draftRoot?.byType?.[type]) ?? DEFAULT_DRAFT;
 
@@ -50,7 +48,6 @@ export default function BookingCalendarScreen() {
     <View style={s.container}>
       <Text style={s.header}>Choose {typeLabel} date</Text>
 
-      {/* اختيار التاريخ */}
       <BookingCalendar
         selectedDate={draftForType.date}
         onSelectDate={(d) => {
@@ -58,7 +55,6 @@ export default function BookingCalendarScreen() {
         }}
       />
 
-      {/* اختيار وقت البداية */}
         <StartTimePicker
         value={draftForType.start}
         onChange={(v) => {
@@ -68,8 +64,6 @@ export default function BookingCalendarScreen() {
         date={draftForType.date}  
       />
 
-
-      {/* اختيار المدة */}
       <DurationPicker
         hours={draftForType.hours}
         onChange={(h) => dispatch(setHours({ type, hours: h }))}
@@ -77,7 +71,6 @@ export default function BookingCalendarScreen() {
         min={1}
       />
 
-      {/* زر المتابعة */}
       <BookingButton
         label={canContinue ? "Continue" : "Select date, start, duration"}
         disabled={!canContinue}
@@ -93,7 +86,7 @@ const s = StyleSheet.create({
   header: {
     fontSize: 22,
     fontWeight: "900",
-    color: BLUE, // أزرق بدل الرمادي
+    color: BLUE,
     textAlign: "center",
     marginTop: 8,
     marginBottom: 8,

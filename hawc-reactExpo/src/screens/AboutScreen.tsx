@@ -8,24 +8,23 @@ export default function AboutScreen() {
   const [canGoBack, setCanGoBack] = useState(false);
   const navigation = useNavigation();
 
-  // 1) اعترض أي محاولة لمغادرة الشاشة
+
   useFocusEffect(
     useCallback(() => {
       const unsubBeforeRemove = navigation.addListener("beforeRemove", (e) => {
-        if (!canGoBack || !webRef.current) return; // ماكو تاريخ -> اسمح بالخروج
-        e.preventDefault();           // امنع مغادرة الشاشة
-        webRef.current.goBack();      // ارجع داخل الويب فيو
+        if (!canGoBack || !webRef.current) return; 
+        e.preventDefault();         
+        webRef.current.goBack();      
       });
 
-      // 2) هاردوير باك على أندرويد
       const unsubHW =
         Platform.OS === "android"
           ? BackHandler.addEventListener("hardwareBackPress", () => {
               if (canGoBack && webRef.current) {
                 webRef.current.goBack();
-                return true; // لا تغادر الشاشة
+                return true; 
               }
-              return false;   // اسمح للنافجيشن يرجع
+              return false;  
             })
           : { remove: () => {} };
 

@@ -1,22 +1,11 @@
 // src/screens/LoginScreen.tsx
 import React, { useState, useRef, useEffect } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableOpacity,
-  Animated,
-  Alert,
-} from "react-native";
+import {View,Text,TextInput,StyleSheet,KeyboardAvoidingView,Platform,TouchableOpacity,Animated,Alert,} from "react-native";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import AppButton from "../components/AppButton";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-
 import { auth, db } from "../config/firebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -34,7 +23,6 @@ export default function LoginScreen() {
   const nav = useNavigation();
   const [hidePass, setHidePass] = useState(true);
 
-  // حركة اللوغو
   const tilt = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.loop(
@@ -52,7 +40,6 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={s.container}
     >
-      {/* اللوغو المتحرك */}
       <View pointerEvents="none" style={s.titleWrap}>
         <Animated.View
           style={[s.logoShadow, { transform: [{ perspective: 800 }, { rotateY: rotate }, { scale }] }]}
@@ -73,20 +60,15 @@ export default function LoginScreen() {
           validationSchema={schema}
           onSubmit={async (v, { setSubmitting }) => {
             try {
-              // تسجيل الدخول عبر Firebase
+             
               const cred = await signInWithEmailAndPassword(auth, v.email, v.password);
               const user = cred.user;
-
-              // جلب نوع المستخدم من Firestore (standard / professional)
+            
               const snap = await getDoc(doc(db, "users", user.uid));
               const userData = snap.exists() ? snap.data() : null;
               const userType = (userData?.userType as "standard" | "professional") || "standard";
 
               console.log("Logged in user type:", userType, "data:", userData);
-
-              // التنقّل: لو عندك onAuthStateChanged في الـ Root يكفي تسجيل الدخول فقط
-              // وإلا يمكنك استخدام reset حسب نافيجيتورك:
-              // nav.reset({ index: 0, routes: [{ name: "Main" as never }] });
 
             } catch (error: any) {
               console.log("Firebase login error:", error);

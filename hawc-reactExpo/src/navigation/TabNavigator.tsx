@@ -9,6 +9,7 @@ import ProfileScreen from "../screens/ProfileScreen";
 import { auth, db } from "../config/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, collection, onSnapshot, query, where } from "firebase/firestore";
+import AdminInvoiceScreen from "../screens/AdminInvoiceScreen";
 
 const Tab = createBottomTabNavigator<TabParamsList>();
 
@@ -79,13 +80,13 @@ export default function TabNavigator() {
       {isAdmin && (
         <Tab.Screen
           name="AdminInvoice"
-          component={RootStackNavigator}
+          component={AdminInvoiceScreen}
           options={{
             headerShown: false,
-            title: "Admin",
+            title: "Invoice Approvals",
             tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
             tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="shield-check" color={color} size={size} />
+              <MaterialCommunityIcons name="check-circle" color={color} size={size} />
             ),
           }}
         />

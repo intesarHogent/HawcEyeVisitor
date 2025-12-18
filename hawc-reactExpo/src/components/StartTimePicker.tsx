@@ -2,12 +2,12 @@ import React, { useMemo } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from "react-native";
 
 type Props = {
-  value: string | null;                 // الوقت المختار مثل "09:30"
-  onChange: (hhmm: string) => void;     // يرجّع الوقت المختار للأب
-  step?: number;                        // الدقائق بين كل خيار، افتراضي 30
-  startAt?: string;                     // بداية اليوم "00:00"
-  endAt?: string;                       // نهاية اليوم "23:30"
-  date?: string;                        // تاريخ اليوم المختار "YYYY-MM-DD"
+  value: string | null;                
+  onChange: (hhmm: string) => void;    
+  step?: number;                        
+  startAt?: string;                     
+  endAt?: string;                      
+  date?: string;                       
 };
 
 const BLUE = "#0d7ff2";
@@ -54,7 +54,7 @@ export default function StartTimePicker({
           const [h, m] = item.split(":").map(Number);
           const slotMinutes = h * 60 + m;
 
-          // تعطيل الأوقات السابقة فقط إذا التاريخ هو اليوم
+  
           const disabled = isToday && slotMinutes < nowMinutes;
 
           const active = !disabled && value === item;

@@ -10,15 +10,13 @@ const CTA_H = 72;
 
 export default function BookingDetailScreen() {
   const {
-    params: { data, date, start, end },
-  } = useRoute<RootStackNavProps<"BookingDetail">["route"]>();
+    params: { data, date, start, end },} = useRoute<RootStackNavProps<"BookingDetail">["route"]>();
 
   const navigation = useNavigation();
 
   const item = data as Resource;
   const pricePerHour = (item as any).pricePerHour ?? 0;
 
-  // ===== ANIMATION للتحذير =====
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(8)).current;
 

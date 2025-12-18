@@ -4,7 +4,6 @@ import { Calendar } from "react-native-calendars";
 
 const BLUE = "#0d7ff2";
 
-// تاريخ اليوم حسب التوقيت المحلي بصيغة YYYY-MM-DD
 const today = (() => {
   const d = new Date();
   const y = d.getFullYear();
@@ -20,7 +19,6 @@ type Props = {
 
 export default function BookingCalendar({ selectedDate, onSelectDate }: Props) {
   const marked = {
-    //اذا المستخدم اختار يرجع الاختيار ولون ازرق وابيض تيكست واذا ما رجع يرجع كائن فارغ
     ...(selectedDate
       ? { [selectedDate]: { selected: true, selectedColor: BLUE, selectedTextColor: "white" } }
       : {}),
@@ -31,11 +29,10 @@ export default function BookingCalendar({ selectedDate, onSelectDate }: Props) {
       <Text style={s.title}>Select Date</Text>
       <Calendar
         markedDates={marked}
-        // المكتبه مال رياكت كالندر هي تجيب كلمة دي جاهزه موجوده 
         onDayPress={(day) => onSelectDate(day.dateString)}
         theme={{ selectedDayBackgroundColor: BLUE, todayTextColor: BLUE, arrowColor: BLUE }}
         style={s.calendar}
-        minDate={today} // كل الأيام قبل اليوم تكون رمادية ومقفلة
+        minDate={today} 
       />
     </View>
   );

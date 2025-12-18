@@ -1,22 +1,11 @@
 // src/screens/PaymentWebView.tsx
-
 import React, { useCallback, useRef, useState } from "react";
-import {
-  View,
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  Pressable,
-} from "react-native";
+import {View,ActivityIndicator,StyleSheet,Text,Pressable,} from "react-native";
 import { WebView, WebViewNavigation } from "react-native-webview";
 import { useRoute, useNavigation, StackActions } from "@react-navigation/native";
 import type { RootStackNavProps } from "../navigation/types";
-
-// Redux
 import { useAppDispatch } from "../hooks/reduxHooks";
 import { resetCurrent } from "../store/slices/bookingDraft";
-
-// Firestore
 import { db } from "../config/firebaseConfig";
 import { addDoc, collection } from "firebase/firestore";
 
@@ -29,7 +18,7 @@ type PaymentResult = {
   kind: "success" | "error";
   title: string;
   message: string;
-  goTo: "MyBookings" | "back" | "home"; // ← أضفنا home
+  goTo: "MyBookings" | "back" | "home";
 };
 
 export default function PaymentWebView() {
@@ -52,17 +41,14 @@ export default function PaymentWebView() {
     setResult(null);
 
     if (target === "MyBookings") {
-      // نجاح الدفع → إلى MyBookings
       navigation.dispatch(StackActions.popToTop());
       // @ts-ignore
       navigation.navigate("MyBookings");
     } else if (target === "home") {
-      // كنسل → إلى Home
       navigation.dispatch(StackActions.popToTop());
       // @ts-ignore
       navigation.navigate("Home");
     } else {
-      // failed / open / expired → خطوة للخلف فقط
       navigation.goBack();
     }
   }, [navigation, result]);
@@ -113,7 +99,6 @@ export default function PaymentWebView() {
 
       console.log("WebView URL:", url);
 
-      // أي URL يحتوي على /api/payment-complete نعتبره نهاية الدفع
       if (url.includes(COMPLETION_PATH)) {
         hasCompletedRef.current = true;
 
@@ -140,9 +125,9 @@ export default function PaymentWebView() {
             const status = statusData.status as string;
 
             if (status === "paid") {
-              await finalizeBooking(); // → MyBookings
+              await finalizeBooking();
             } else if (status === "canceled") {
-              // كنسل → رسالة حمراء + Home
+
               setResult({
                 kind: "error",
                 title: "Payment canceled",
@@ -150,19 +135,19 @@ export default function PaymentWebView() {
                 goTo: "home",
               });
             } else if (status === "failed") {
-              // فشل → خطوة للخلف
+
               showErrorResult(
                 "Payment failed",
                 "The payment failed. Please try again."
               );
             } else if (status === "expired") {
-              // منتهي → خطوة للخلف
+
               showErrorResult(
                 "Payment expired",
                 "The payment has expired. Please try again."
               );
             } else if (status === "open") {
-              // open → خطوة للخلف
+ 
               showErrorResult(
                 "Payment not completed",
                 "Payment is still open. Please try again."
@@ -243,7 +228,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  // نتيجة الدفع (نجاح / فشل)
   resultOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
@@ -258,11 +242,11 @@ const styles = StyleSheet.create({
   },
   resultCardSuccess: {
     borderLeftWidth: 4,
-    borderLeftColor: "#16a34a", // أخضر
+    borderLeftColor: "#16a34a", 
   },
   resultCardError: {
     borderLeftWidth: 4,
-    borderLeftColor: "#dc2626", // أحمر
+    borderLeftColor: "#dc2626", 
   },
   resultTitle: {
     fontSize: 18,

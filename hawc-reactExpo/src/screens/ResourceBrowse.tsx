@@ -8,7 +8,6 @@ import HawcCard from "../components/HawcCard";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 type Row = { id: "room" | "car" | "parking"; label: string; icon: any };
-
 const DATA: Row[] = [
   { id: "room",    label: "Meeting Hall", icon: "door" },
   { id: "car",     label: "Car",          icon: "car" },
@@ -67,18 +66,15 @@ export default function ResourceBrowse() {
   ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
 />
 
-{/* رابط About مرفوع قليلاً للأعلى */}
 <TouchableOpacity
   onPress={() => navigation.navigate("About")}
   activeOpacity={0.8}
-  style={[styles.aboutRow, { marginBottom: insets.bottom + 50 }]} // ارفع الرقم حسب الحاجة
+  style={[styles.aboutRow, { marginBottom: insets.bottom + 50 }]} 
 >
   <MaterialCommunityIcons name="information-outline" size={25} color={BLUE} />
   <Text style={styles.aboutText}>About HAWC-Servers</Text>
   <MaterialCommunityIcons name="chevron-right" size={25} color={BLUE} />
 </TouchableOpacity>
-
-
 <HawcVisitorTitle />
 
     </SafeAreaView>
@@ -101,7 +97,6 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 16,
   },
-
   listContainer: {
     paddingHorizontal: 16,
     gap: 12,
@@ -110,7 +105,6 @@ const styles = StyleSheet.create({
     paddingTop: 230,
     paddingBottom: 8,
   },
-
   subtitle: {
     textAlign: "left",
     fontSize: 26,
@@ -118,8 +112,6 @@ const styles = StyleSheet.create({
     color: "#0b1220",
     marginBottom: 12,
   },
-
-  // رابط About عصري وخفيف
   aboutRow: {
     alignSelf: "center",
     flexDirection: "row",

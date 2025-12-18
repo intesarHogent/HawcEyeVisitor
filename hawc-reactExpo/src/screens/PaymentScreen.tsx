@@ -1,21 +1,11 @@
 // src/screens/PaymentScreen.tsx
-
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, ScrollView, Alert, StyleSheet } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import type { RootStackNavProps } from "../navigation/types";
 import BookingButton from "../components/AppButton";
-
-// Firestore + Auth
 import { auth, db } from "../config/firebaseConfig";
-import {
-  getDocs,
-  collection,
-  query,
-  where,
-  doc,
-  getDoc,
-} from "firebase/firestore";
+import {getDocs,collection,query,where,doc,getDoc,} from "firebase/firestore";
 
 // Backend base URL (Vercel)
 const PAYMENTS_BASE_URL = "https://hawc-payments-backend.vercel.app";
@@ -30,12 +20,9 @@ export default function PaymentScreen() {
   const [invoiceApproval, setInvoiceApproval] = useState<
   "none" | "pending" | "approved" | "rejected">("none");
 
-  // نوع المستخدم (من Firestore)
   const [userType, setUserType] = useState<"standard" | "professional" | "admin">("standard");
-  // لمنع الضغط المتكرر على زر Pay later
   const [invoiceBusy, setInvoiceBusy] = useState(false);
 
-  // تحميل نوع الحساب من Firestore
   useEffect(() => {
     const fetchUserType = async () => {
       const uid = auth.currentUser?.uid;
@@ -96,7 +83,7 @@ export default function PaymentScreen() {
     []
   );
 
-  // الدفع مع Mollie
+  //Mollie
   const handleContinue = useCallback(async () => {
     if (!date || !start || !end) return;
 
@@ -184,9 +171,8 @@ export default function PaymentScreen() {
     }
   }, [date, start, end, data, total, checkConflict, navigation]);
 
-  // الفوترة لاحقاً (للمستخدم المهني فقط)
   const handleInvoiceLater = useCallback(async () => {
-    if (invoiceBusy) return; // منع الضغط المتكرر
+    if (invoiceBusy) return;
 
     if (!date || !start || !end) return;
 
@@ -209,8 +195,6 @@ export default function PaymentScreen() {
 
     try {
       setInvoiceBusy(true);
-
-      // نفس فحص التعارض مثل Mollie
       const conflict = await checkConflict((data as any).id, sIso, eIso);
 
       if (conflict) {
@@ -221,8 +205,7 @@ export default function PaymentScreen() {
         return;
       }
 
-      const res = await fetch(
-        "https://hawc-payments-backend.vercel.app/api/create-invoice-booking",
+      const res = await fetch("https://hawc-payments-backend.vercel.app/api/create-invoice-booking",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -303,13 +286,10 @@ export default function PaymentScreen() {
           </Text>
         </View>
 
-        {/* STANDARD USER → Mollie only */}
-       {/* STANDARD USER → Mollie only */}
           {userType === "standard" && (
             <BookingButton label="Pay with Mollie" onPress={handleContinue} />
           )}
 
-          {/* PROFESSIONAL USER → Mollie + Invoice (حسب الموافقة) */}
           {userType === "professional" && (
             <>
               <BookingButton label="Pay with Mollie" onPress={handleContinue} />
@@ -336,7 +316,6 @@ export default function PaymentScreen() {
             </>
           )}
 
-          {/* ADMIN USER → Mollie + Invoice بدون شروط */}
           {userType === "admin" && (
             <>
               <BookingButton label="Pay with Mollie" onPress={handleContinue} />

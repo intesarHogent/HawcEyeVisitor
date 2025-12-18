@@ -1,16 +1,6 @@
 // src/screens/RegisterScreen.tsx
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableOpacity,
-  Alert,
-  SafeAreaView,
-} from "react-native";
+import {View,Text,TextInput,StyleSheet,KeyboardAvoidingView,Platform,TouchableOpacity,Alert,SafeAreaView,} from "react-native";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import AppButton from "../components/AppButton";
@@ -19,6 +9,9 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { auth, db } from "../config/firebaseConfig";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { AuthStackParamList } from "../navigation/types";
+
 
 
 const BLUE = "#0d7ff2";
@@ -36,7 +29,7 @@ const schema = Yup.object({
 });
 
 export default function RegisterScreen() {
-  const nav = useNavigation();
+  const nav = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const [hidePass, setHidePass] = useState(true);
   const [hideConfirm, setHideConfirm] = useState(true);
   const [showPopup, setShowPopup] = useState(false);
@@ -66,19 +59,26 @@ export default function RegisterScreen() {
               try {
                 const cred = await createUserWithEmailAndPassword(auth, v.email, v.password);
 
-               const userData: any = {
-                  fullName: v.fullName,
-                  email: v.email,
-                  userType: userType,
-                  invoiceApproval: userType === "professional" ? "pending" : "none",
-                  createdAt: new Date().toISOString(),
-                };
+               const userData: {
+                fullName: string;
+                email: string;
+                userType: "standard" | "professional";
+                invoiceApproval: "none" | "pending";
+                createdAt: string;
+                companyName?: string;
+                vat?: string;
+              } = {
+                fullName: v.fullName,
+                email: v.email,
+                userType: userType,
+                invoiceApproval: userType === "professional" ? "pending" : "none",
+                createdAt: new Date().toISOString(),
+              };
 
                 if (userType === "professional") {
                   userData.companyName = v.companyName;
                   userData.vat = v.vat;
                 }
-
 
                 await setDoc(doc(db, "users", cred.user.uid), userData);
 
@@ -291,7 +291,6 @@ export default function RegisterScreen() {
           visible={showPopup}
           onClose={() => {
             setShowPopup(false);
-            // @ts-ignore
             nav.navigate("Login");
           }}
         />

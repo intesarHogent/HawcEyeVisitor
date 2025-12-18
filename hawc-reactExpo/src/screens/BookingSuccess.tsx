@@ -1,19 +1,10 @@
 // src/screens/BookingSuccessScreen.tsx
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ActivityIndicator,
-  TouchableOpacity,
-} from "react-native";
+import {View,Text,StyleSheet,ActivityIndicator,TouchableOpacity,} from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import AppButton from "../components/AppButton";
 import { auth, db } from "../config/firebaseConfig";
 import { addDoc, collection } from "firebase/firestore";
 import type { Resource } from "../types/env";
-
-// هوك الريدوكس + أكشن مسح الدرافت بالكامل
 import { useAppDispatch } from "../hooks/reduxHooks";
 import { resetAll } from "../store/slices/bookingDraft";
 
@@ -41,7 +32,6 @@ export default function BookingSuccessScreen() {
 
   const dispatch = useAppDispatch();
 
-  // مسح كل مسودات الحجز من الريدوكس بعد الوصول لشاشة النجاح (لمولي و للفاتورة)
   useEffect(() => {
     dispatch(resetAll());
   }, [dispatch]);
@@ -54,8 +44,6 @@ export default function BookingSuccessScreen() {
     dt.setUTCHours(hh, mm, 0, 0);
     return dt;
   };
-
-  // حفظ الحجز في حالة "Invoice later"
   useEffect(() => {
     const saveInvoiceBooking = async () => {
       if (via !== "invoice") {
@@ -113,11 +101,9 @@ export default function BookingSuccessScreen() {
     };
 
     saveInvoiceBooking();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const goToMyBookings = () => {
-    // نصفر الـ stack كله ونخلي أول صفحة هي MyBookings
     // @ts-ignore
     navigation.reset({
       index: 0,

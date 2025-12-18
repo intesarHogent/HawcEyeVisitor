@@ -1,22 +1,13 @@
 // src/screens/BookingListScreen.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import { FlatList, StyleSheet, View, Text } from "react-native";
+import { FlatList, StyleSheet, View, Text, ActivityIndicator } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { RootStackNavProps } from "../navigation/types";
 import type { Resource } from "../types/env";
 import ResourceListItem from "../components/ResourceListItem";
-
-// +++ NEW: قراءة المسودة من الريدكس للفولباك عند غياب الباراميترات
-import { useAppSelector } from "../hooks/reduxHooks";
-
-// +++ NEW: Firestore
 import { collection, getDocs } from "firebase/firestore";
-import { auth, db } from "../config/firebaseConfig";
+import { db } from "../config/firebaseConfig";
 
-
-const BLUE = "#0d7ff2";
-
-// +++ NEW: نوع الحجوزات المخزّنة في collection `bookings`
 type BookingDoc = {
   resourceId: string;
   type: "room" | "car" | "parking";
@@ -24,11 +15,9 @@ type BookingDoc = {
   end: string;
 };
 
-/** تداخل نطاقين تاريخ-وقت */
 const overlapsRange = (aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) =>
   aStart.getTime() < bEnd.getTime() && bStart.getTime() < aEnd.getTime();
 
-/** صياغة YYYY-MM-DD HH:mm بوقت UTC */
 const fmt = (d: Date) => {
   const Y = d.getUTCFullYear();
   const M = String(d.getUTCMonth() + 1).padStart(2, "0");
@@ -37,41 +26,38 @@ const fmt = (d: Date) => {
   const m = String(d.getUTCMinutes()).padStart(2, "0");
   return `${Y}-${M}-${D} ${h}:${m}`;
 };
-/** صياغة HH:mm بوقت UTC */
+
 const fmtHM = (d: Date) =>
   `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 
 export default function BookingListScreen() {
   const navigation = useNavigation<RootStackNavProps<"BookingList">["navigation"]>();
 
-  // نقرأ الباراميترات إن وُجدت
   const route = useRoute<RootStackNavProps<"BookingList">["route"]>();
   const params = route.params as
     | { type: "room" | "car" | "parking"; date: string; start: string; hours: number }
     | undefined;
 
-  // +++ NEW: فولباك من Redux draft-byType إذا ما وصلت باراميترات لأي سبب
-  const draft = useAppSelector((s) => s.bookingDraft);
-  const currentType: "room" | "car" | "parking" =
-    (params?.type as any) ?? (draft.type as any) ?? "room";
+  const type = params?.type;
+  const date = params?.date ?? "";
+  const start = params?.start ?? "";
+  const hours = params?.hours ?? 0;
 
-  // مسودة النوع الحالي فقط
-  const draftForType = useAppSelector((s) => s.bookingDraft.byType[currentType]);
-
-  const date: string = params?.date ?? draftForType.date ?? "";
-  const start: string = params?.start ?? (draftForType.start ?? "00:00");
-  const hours: number = params?.hours ?? draftForType.hours ?? 1;
+  const hasValidParams = !!type && !!date && !!start && hours > 0;
 
   const [resources, setResources] = useState<Resource[]>([]);
-  // +++ NEW: كل الحجوزات من collection `bookings`
   const [bookingsAll, setBookingsAll] = useState<BookingDoc[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [errorText, setErrorText] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
 
     const fetchFromFirestore = async () => {
       try {
-        // rooms
+        setLoading(true);
+        setErrorText(null);
+
         const roomsSnap = await getDocs(collection(db, "rooms"));
         const rooms = roomsSnap.docs.map((d) => ({
           id: d.id,
@@ -79,7 +65,6 @@ export default function BookingListScreen() {
           type: "room" as const,
         })) as Resource[];
 
-        // parkings
         const parkingsSnap = await getDocs(collection(db, "parkings"));
         const parkings = parkingsSnap.docs.map((d) => ({
           id: d.id,
@@ -87,7 +72,6 @@ export default function BookingListScreen() {
           type: "parking" as const,
         })) as Resource[];
 
-        // cars
         const carsSnap = await getDocs(collection(db, "cars"));
         const cars = carsSnap.docs.map((d) => ({
           id: d.id,
@@ -95,49 +79,54 @@ export default function BookingListScreen() {
           type: "car" as const,
         })) as Resource[];
 
-        // +++ NEW: bookings
         const bookingsSnap = await getDocs(collection(db, "bookings"));
-        const bookings = bookingsSnap.docs.map(
-          (d) => d.data() as BookingDoc
-        );
+        const bookings = bookingsSnap.docs.map((d) => d.data() as BookingDoc);
 
         if (alive) {
-          // ندمجهم كلهم في مصفوفة واحدة
           setResources([...rooms, ...parkings, ...cars]);
-          // +++ NEW
           setBookingsAll(bookings);
         }
       } catch (err) {
-        console.log("Firestore error:", err);
+        if (alive) {
+          setErrorText("Failed to load data. Check your internet connection and try again.");
+        }
+      } finally {
+        if (alive) setLoading(false);
       }
     };
 
-    fetchFromFirestore();
+    if (hasValidParams) {
+      fetchFromFirestore();
+    } else {
+      setLoading(false);
+      setErrorText("Missing booking details. Please go back and select date, time, and duration.");
+    }
+
     return () => {
       alive = false;
     };
-  }, []);
+  }, [hasValidParams]);
 
-  // نبني start/end بـ UTC كي يطابق "Z" في JSON
-  const startDT = useMemo(() => new Date(`${date}T${start}:00Z`), [date, start]);
-  const endDT = useMemo(() => new Date(startDT.getTime() + hours * 3600 * 1000), [startDT, hours]);
+  const startDT = useMemo(() => {
+    if (!hasValidParams) return new Date(0);
+    return new Date(`${date}T${start}:00Z`);
+  }, [hasValidParams, date, start]);
+
+  const endDT = useMemo(() => {
+    if (!hasValidParams) return new Date(0);
+    return new Date(startDT.getTime() + hours * 3600 * 1000);
+  }, [hasValidParams, startDT, hours]);
+
   const endHM = useMemo(() => fmtHM(endDT), [endDT]);
 
-  // تداخل "HH:mm" للغرف داخل نفس اليوم
-  const overlapsHH = (aS: string, aE: string, bS: string, bE: string) => aS < bE && bS < aE;
-
-  const sameDayUTC = (a: Date, b: Date) =>
-    a.getUTCFullYear() === b.getUTCFullYear() &&
-    a.getUTCMonth() === b.getUTCMonth() &&
-    a.getUTCDate() === b.getUTCDate();
-
   const filtered = useMemo(() => {
+    if (!hasValidParams) return [];
+
     const out: Resource[] = [];
 
     for (const r of resources) {
-      if (r.type !== currentType) continue;
+      if (r.type !== type) continue;
 
-      // +++ NEW: استخدم نفس مصدر البيانات للحجوزات (collection `bookings`)
       const bookingsForResource = bookingsAll.filter(
         (b) => b.resourceId === String(r.id) && b.type === r.type
       );
@@ -155,10 +144,28 @@ export default function BookingListScreen() {
     }
 
     return out;
-  }, [resources, currentType, startDT, endDT, bookingsAll]);
+  }, [hasValidParams, resources, type, bookingsAll, startDT, endDT]);
 
-  const endLabel = fmt(endDT);
-  const iconByType = currentType === "room" ? "door" : currentType === "car" ? "car" : "parking";
+  const endLabel = hasValidParams ? fmt(endDT) : "";
+  const iconByType = type === "room" ? "door" : type === "car" ? "car" : "parking";
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
+        <Text style={styles.helperText}>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (errorText) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorTitle}>Error</Text>
+        <Text style={styles.helperText}>{errorText}</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -175,7 +182,9 @@ export default function BookingListScreen() {
         ListEmptyComponent={
           <View style={{ padding: 24, alignItems: "center" }}>
             <Text style={{ fontWeight: "800", color: "#0b1220" }}>No available resources</Text>
-            <Text style={{ color: "#64748b", marginTop: 4, fontSize: 12 }}>Try a different start or duration</Text>
+            <Text style={{ color: "#64748b", marginTop: 4, fontSize: 12 }}>
+              Try a different start or duration
+            </Text>
           </View>
         }
         renderItem={({ item }) => (
@@ -213,4 +222,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   badgeText: { color: "#0b1220", fontWeight: "800", fontSize: 12 },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
+  errorTitle: { fontSize: 18, fontWeight: "900", color: "#0b1220" },
+  helperText: { marginTop: 8, color: "#64748b", textAlign: "center" },
 });

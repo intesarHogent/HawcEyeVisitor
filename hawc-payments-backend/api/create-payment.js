@@ -1,20 +1,12 @@
 const { createMollieClient } = require('@mollie/api-client');
 const { Resend } = require('resend');
 
-console.log(
-  'MOLLIE_API_KEY exists:',
-  !!process.env.MOLLIE_API_KEY,
-  'prefix:',
-  process.env.MOLLIE_API_KEY ? process.env.MOLLIE_API_KEY.slice(0, 7) : null
-);
-
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const mollieClient = createMollieClient({
   apiKey: process.env.MOLLIE_API_KEY,
 });
 
-// الإيميل الوحيد المسموح به في وضع التست
 const TEST_EMAIL = 'intesar.hogent@gmail.com';
 
 module.exports = async (req, res) => {
@@ -42,10 +34,8 @@ module.exports = async (req, res) => {
     });
 
     try {
-      // الإيميل الحقيقي للمستخدم فقط نذكره في نص الرسالة
       const realUserEmail = metadata?.userEmail || metadata?.email || 'unknown';
 
-      // الإرسال دائماً إلى TEST_EMAIL حسب شروط Resend
       const targetEmail = TEST_EMAIL;
 
       if (process.env.RESEND_API_KEY) {

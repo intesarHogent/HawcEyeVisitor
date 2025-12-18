@@ -3,7 +3,6 @@ const { Resend } = require('resend');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// الإيميل الوحيد المسموح به في وضع التست
 const TEST_EMAIL = 'intesar.hogent@gmail.com';
 
 module.exports = async (req, res) => {
@@ -22,7 +21,6 @@ module.exports = async (req, res) => {
 
     const realUserEmail = metadata.userEmail || metadata.email || 'unknown';
 
-    // هنا فقط إيميل تأكيد (لا Mollie)
     if (process.env.RESEND_API_KEY) {
       const emailResult = await resend.emails.send({
         from: 'onboarding@resend.dev',
@@ -38,8 +36,6 @@ module.exports = async (req, res) => {
 
       console.log('Resend invoice emailResult:', emailResult);
     }
-
-    // بإمكانك لاحقاً هنا أيضاً كتابة الحجز في Firestore via Cloud Function لو حبيت
 
     res.status(200).json({ ok: true });
   } catch (err) {
