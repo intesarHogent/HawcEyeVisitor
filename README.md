@@ -1,14 +1,15 @@
-📘 HawcEye Visitor – README
+📘 Hawc Eye Visitor – README
 🧩 Overzicht
 
-Hawc Visitor is een mobiele applicatie (Expo React Native) voor het reserveren van bedrijfsresources zoals vergaderruimtes, auto’s en parkeerplaatsen.
-De app ondersteunt online betalingen via Mollie, achteraf betalen via factuur (met admin-goedkeuring) en automatische e-mailnotificaties via Resend.
-De backend draait op Vercel Serverless Functions, met Firebase Authentication + Firestore voor dataopslag.
+Hawc Eye Visitor is een mobiele applicatie (Expo React Native) voor het reserveren van bedrijfsresources zoals vergaderruimtes, auto’s en parkeerplaatsen.
+De applicatie ondersteunt directe betalingen via Mollie, achteraf betalen via factuur (na administratieve goedkeuring) en automatische e-mailnotificaties via Resend.
+
+De backend is opgebouwd met Vercel Serverless Functions, terwijl Firebase Authentication en Firestore worden gebruikt voor authenticatie en dataopslag.
 
 📱 Functionaliteiten
 🔐 Authenticatie
 
-Inloggen / registreren via Firebase Authentication
+Inloggen en registreren via Firebase Authentication
 
 Ondersteuning voor:
 
@@ -16,21 +17,20 @@ Standaard gebruikers
 
 Professionele gebruikers
 
-Admin
+Administrators
 
 Automatische sessieherstelling
 
 🧑‍💼 Gebruikerstypes & Rechten
-
 Standard user
 
-Enkel online betalen (Mollie)
+Enkel directe betaling via Mollie
 
 Professional user
 
-Online betalen (Mollie)
+Directe betaling via Mollie
 
-Achteraf betalen via factuur na goedkeuring door admin
+Achteraf betalen via factuur na administratieve goedkeuring
 
 Admin
 
@@ -40,11 +40,13 @@ Factuurbetalingen altijd toegestaan
 
 Beheer van factuurgoedkeuringen
 
-🧾 Factuurgoedkeuring (Nieuw)
+De administratieve functionaliteiten dienen ter ondersteuning van de gebruikersflow en zijn niet het hoofdfocuspunt van dit project.
+
+🧾 Factuurgoedkeuring
 
 Professionele gebruikers kunnen een factuuraanvraag indienen
 
-Status wordt opgeslagen in Firestore (invoiceApproval)
+Status wordt opgeslagen in Firestore (invoiceApproval):
 
 pending
 
@@ -52,30 +54,26 @@ approved
 
 rejected
 
-Admin Invoice Screen
+Administrators kunnen aanvragen goedkeuren of weigeren
 
-Overzicht van alle pending factuuraanvragen
-
-Mogelijkheid om aanvragen goed te keuren of te weigeren
-
-De Payment-flow past zich automatisch aan op basis van deze status
+De betalingsflow past zich automatisch aan op basis van deze status
 
 🗓️ Reserveringen
 
-Datum en tijd selecteren
+Selectie van datum en tijd
 
-Conflict-check via Firestore
+Conflict-controle via Firestore
 
-Bookings worden opgeslagen in Firestore
+Reservaties worden opgeslagen in Firestore
 
-Redux draft-systeem
+Redux draft-systeem:
 
 Draft blijft bestaan tot betaling of factuur
 
-Draft wordt gewist na succesvolle afronding
+Draft wordt verwijderd na succesvolle afronding
 
 💳 Betalingen
-1. Online betaling (Mollie)
+1. Directe betaling (Mollie)
 
 Start via /api/create-payment
 
@@ -85,37 +83,37 @@ Mollie callback verwerkt door backend
 
 Bevestigingsmail via Resend
 
-Booking opgeslagen in Firestore
+Reservatie opgeslagen in Firestore
 
-2. Achteraf betalen (Factuur)
+2. Betaling via factuur
 
 Enkel voor professionele gebruikers
 
-Alleen beschikbaar bij invoiceApproval === "approved"
+Alleen beschikbaar wanneer invoiceApproval === "approved"
 
-Backend stuurt factuurnotificatie via Resend
+Backend verstuurt factuurbevestiging via Resend
 
-App slaat booking op
-
-Geen Mollie-betaling vereist
+Reservatie wordt opgeslagen zonder Mollie-betaling
 
 📧 E-mailnotificaties (Resend)
 
 Bevestiging bij Mollie-betaling
 
-Bevestiging bij factuurboeking
+Bevestiging bij factuurreservatie
 
-Logs en verbruik zichtbaar in Resend dashboard
+Logs en verbruik zichtbaar in het Resend-dashboard
+
+Gratis plan: 3000 e-mails / maand
 
 🗄️ Firestore Structuur
 📂 Collectie: users
 uid
-  fullName
-  email
-  userType: "standard" | "professional" | "admin"
-  companyName
-  vat
-  invoiceApproval: "none" | "pending" | "approved" | "rejected"
+ ├─ fullName
+ ├─ email
+ ├─ userType: "standard" | "professional" | "admin"
+ ├─ companyName
+ ├─ vat
+ └─ invoiceApproval: "none" | "pending" | "approved" | "rejected"
 
 📂 Collectie: bookings
 resourceId
@@ -133,12 +131,12 @@ createdAt
 🔥 Backend (Vercel Serverless Functions)
 📂 Structuur
 hawc-payments-backend/
-  api/
-    create-payment.js
-    payment-status.js
-    payment-complete.js
-    create-invoice-booking.js
-  vercel.json
+ ├─ api/
+ │   ├─ create-payment.js
+ │   ├─ payment-status.js
+ │   ├─ payment-complete.js
+ │   └─ create-invoice-booking.js
+ └─ vercel.json
 
 📌 Endpoints
 Endpoint	Beschrijving
@@ -152,11 +150,14 @@ MOLLIE_API_KEY=
 RESEND_API_KEY=
 TEST_EMAIL=
 
-Mobiele app
+Mobiele applicatie
 FIREBASE_API_KEY=
 FIREBASE_PROJECT_ID=
 FIREBASE_AUTH_DOMAIN=
 FIREBASE_STORAGE_BUCKET=
+
+
+API-sleutels worden beheerd via environment variables en zijn niet opgenomen in de repository.
 
 🧠 Redux Draft Systeem
 {
@@ -171,7 +172,7 @@ FIREBASE_STORAGE_BUCKET=
 
 Na succesvolle boeking:
 
-resetAll()
+resetAll();
 
 🚀 Installatie
 npm install
@@ -185,67 +186,36 @@ vercel dev
 cd hawc-payments-backend
 vercel --prod
 
-📈 Resend – Verbruik
-
-Dashboard:
-https://resend.com/dashboard
- → Usage
-
-Verzonden e-mails
-
-Resterende quota
-
-Logs per e-mail
-Gratis plan: 3000 e-mails / maand
-
 💳 Betalingsflow (Samenvatting)
-Online betaling
+Directe betaling
 
-App → /create-payment
+App → /create-payment → Mollie Checkout → /payment-complete
+→ Reservatie opgeslagen → E-mail verzonden → Draft verwijderd
 
-Mollie Checkout
+Factuurbetaling
 
-Callback → /payment-complete
-
-Booking opgeslagen
-
-E-mail verzonden
-
-Draft gewist
-
-Navigatie → BookingSuccess
-
-Factuur (“Pay later”)
-
-App → /create-invoice-booking
-
-Factuurmail via Resend
-
-Booking opgeslagen
-
-Draft gewist
-
-Navigatie → MyBookings
+App → /create-invoice-booking → Factuurmail via Resend
+→ Reservatie opgeslagen → Draft verwijderd
 
 📦 App builden
 eas build --platform android
 
 ✔️ Conclusie
 
-Hawc Visitor biedt:
+Hawc Eye Visitor biedt:
 
-een complete reservatie-oplossing
+een complete mobiele reservatie-oplossing
 
-veilige online betalingen
+veilige betalingsmogelijkheden
 
-admin-gestuurde facturatie
+administratief gestuurde facturatie
 
 automatische e-mailnotificaties
 
-schaalbare Vercel backend
+een schaalbare serverless backend
 
-Firestore data-opslag
+duidelijke Firestore-datastructuur
 
-sterke UX met draft-systeem
+sterke gebruikerservaring dankzij het draft-systeem
 
 Geschikt voor bedrijfsgebruik én als Graduaatsproef.
