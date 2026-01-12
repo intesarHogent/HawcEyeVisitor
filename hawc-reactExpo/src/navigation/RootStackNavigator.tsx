@@ -79,12 +79,6 @@ const RootStackNavigator = () => {
         component={BookingSuccessScreen}
         options={{ title: "Booking confirmed", headerBackTitle: "" }}
       />
-
-      <RootStack.Screen
-        name="AdminInvoice"
-        component={AdminInvoiceScreen}
-        options={{ title: "Invoice approvals", headerBackTitle: "" }}
-      />
     </RootStack.Navigator>
   );
 };
