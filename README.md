@@ -1,14 +1,14 @@
 📘 Hawc Eye Visitor – README
 
 🧩 Overzicht
+
 Hawc Eye Visitor is een mobiele applicatie (Expo React Native) voor het reserveren van bedrijfsresources zoals vergaderruimtes, auto’s en parkeerplaatsen.
 De applicatie ondersteunt directe betalingen via Mollie, achteraf betalen via factuur (na administratieve goedkeuring) en automatische e-mailnotificaties via Resend.
 
 De backend is opgebouwd met Vercel Serverless Functions. Firebase Authentication en Firestore worden gebruikt voor authenticatie en dataopslag.
-Belangrijk: het opslaan van boekingen en het verzenden van e-mails gebeurt volledig in de backend (production-ready, één keer per boeking).
+Belangrijk: het opslaan van boekingen en het verzenden van e-mails gebeurt volledig in de backend (production-ready, exact één keer per boeking, met idempotentie).
 
 📱 Functionaliteiten
-
 🔐 Authenticatie
 
 Inloggen en registreren via Firebase Authentication
@@ -59,7 +59,8 @@ rejected
 
 Administrators kunnen aanvragen goedkeuren of weigeren
 
-De betalingsflow past zich automatisch aan op basis van deze status
+Belangrijk: de backend dwingt deze goedkeuring ook effectief af.
+Factuurbetalingen worden server-side geweigerd zolang invoiceApproval !== "approved" (admins uitgezonderd).
 
 🗓️ Reserveringen
 
@@ -76,7 +77,6 @@ Draft blijft bestaan tot betaling of factuur
 Draft wordt verwijderd na succesvolle afronding
 
 💳 Betalingen
-
 1) Directe betaling (Mollie)
 
 Start via /api/create-payment
@@ -119,10 +119,11 @@ Logs en verbruik zichtbaar in het Resend-dashboard
 
 Gratis plan: 3000 e-mails / maand
 
+Opmerking: in de huidige configuratie kan de e-mail worden verstuurd naar een testadres (TEST_EMAIL).
+Voor productie dient dit te worden aangepast naar het echte e-mailadres van de gebruiker.
+
 🗄️ Firestore Structuur
-
 📂 Collectie: users
-
 uid
  ├─ fullName
  ├─ email
@@ -131,9 +132,7 @@ uid
  ├─ vat
  └─ invoiceApproval: "none" | "pending" | "approved" | "rejected"
 
-
 📂 Collectie: bookings
-
 resourceId
 resourceName
 type
@@ -146,11 +145,8 @@ userId
 userEmail
 createdAt
 
-
 🔥 Backend (Vercel Serverless Functions)
-
 📂 Structuur
-
 hawc-payments-backend/
  ├─ api/
  │   ├─ create-payment.js
@@ -159,26 +155,22 @@ hawc-payments-backend/
  │   └─ create-invoice-booking.js
  └─ vercel.json
 
-
 📌 Endpoints
-
 Endpoint	Beschrijving
 /api/create-payment	Start Mollie betaling
 /api/payment-status	Controleert status; bij paid: schrijft booking weg + verstuurt e-mail (idempotent)
 /api/payment-complete	Mollie callback
-/api/create-invoice-booking	Maakt invoice-booking aan: opslag in Firestore + één e-mail
-
+/api/create-invoice-booking	Maakt invoice-booking aan: opslag in Firestore + één e-mail (met server-side approval check)
 🔧 Environment Variables
-
 Backend (Vercel)
-
 MOLLIE_API_KEY=
 RESEND_API_KEY=
 TEST_EMAIL=
-
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
 
 Mobiele applicatie
-
 FIREBASE_API_KEY=
 FIREBASE_PROJECT_ID=
 FIREBASE_AUTH_DOMAIN=
@@ -188,7 +180,6 @@ FIREBASE_STORAGE_BUCKET=
 API-sleutels worden beheerd via environment variables en zijn niet opgenomen in de repository.
 
 🧠 Redux Draft Systeem
-
 {
   type: "room" | "car" | "parking",
   byType: {
@@ -203,23 +194,17 @@ Na succesvolle boeking:
 
 resetAll();
 
-
 🚀 Installatie
-
 npm install
 npx expo start
 
-
 🛠️ Backend lokaal testen
-
 cd hawc-payments-backend
 vercel dev
-
 
 📤 Backend deployen (Production)
 
 Automatisch via GitHub → Vercel: elke git push triggert een nieuwe deployment.
-
 Handmatig deployen is niet nodig voor productie.
 
 💳 Betalingsflow (Samenvatting)
@@ -230,23 +215,22 @@ App → /create-payment → Mollie Checkout → /payment-status
 
 Factuurbetaling
 App → /create-invoice-booking
-→ Backend: opslag in Firestore + e-mail → App toont bevestiging → Draft verwijderd
+→ Backend: controleert approval server-side, opslag in Firestore + e-mail → App toont bevestiging → Draft verwijderd
 
 📦 App builden
-
 eas build --platform android
 
-
 ✔️ Conclusie
+
 Hawc Eye Visitor biedt:
 
 een complete mobiele reservatie-oplossing
 
 veilige betalingsmogelijkheden
 
-administratief gestuurde facturatie
+administratief gestuurde facturatie (afgedwongen in de backend)
 
-automatische e-mailnotificaties
+automatische e-mailnotificaties (Resend)
 
 een schaalbare serverless backend met auto-deploy
 
