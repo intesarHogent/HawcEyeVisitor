@@ -66,6 +66,25 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: "metadata.requestId is required for idempotency" });
     }
 
+    // ===== ENFORCE INVOICE APPROVAL (BACKEND) =====
+    const userSnap = await db.collection("users").doc(metadata.userId).get();
+    if (!userSnap.exists) {
+      return res.status(403).json({ error: "User not found" });
+    }
+
+    const user = userSnap.data();
+    const userType = user?.userType;
+    const invoiceApproval = user?.invoiceApproval;
+
+    // Admins always allowed
+    // Others must be approved
+    if (userType !== "admin" && invoiceApproval !== "approved") {
+      return res.status(403).json({
+        error: "Invoice payment not allowed: user not approved",
+      });
+    }
+    // =============================================
+
     const realUserEmail = metadata.userEmail || metadata.email || "unknown";
 
     const bookingRef = db.collection("bookings").doc(`invoice_${requestId}`);
