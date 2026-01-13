@@ -9,35 +9,44 @@ const mollieClient = createMollieClient({
 const resend = new Resend(process.env.RESEND_API_KEY);
 const TEST_EMAIL = "intesar.hogent@gmail.com";
 
-let db = null;
-
-function getDb() {
-  if (db) return db;
-
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (!raw) return null;
-
-  let serviceAccount;
+// ===== Firebase Init (SAFE - no crash) =====
+function getDbOrNull() {
   try {
-    serviceAccount = JSON.parse(raw);
-  } catch {
+    if (!admin.apps.length) {
+      const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+
+      if (!raw) {
+        console.error("FIREBASE_SERVICE_ACCOUNT is missing in environment variables");
+        return null;
+      }
+
+      let serviceAccount;
+      try {
+        serviceAccount = JSON.parse(raw);
+      } catch (err) {
+        console.error("Invalid FIREBASE_SERVICE_ACCOUNT JSON:", err);
+        return null;
+      }
+
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+    }
+
+    return admin.firestore();
+  } catch (err) {
+    console.error("Firebase init failed:", err);
     return null;
   }
-
-  if (!admin.apps.length) {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
-  }
-
-  db = admin.firestore();
-  return db;
 }
 
+// ===== Handler =====
 module.exports = async (req, res) => {
   const { id } = req.query;
 
-  if (!id) return res.status(400).json({ error: "id is required" });
+  if (!id) {
+    return res.status(400).json({ error: "id is required" });
+  }
 
   try {
     const payment = await mollieClient.payments.get(id);
@@ -46,9 +55,12 @@ module.exports = async (req, res) => {
       return res.status(200).json({ id: payment.id, status: payment.status });
     }
 
-    const firestore = getDb();
-    if (!firestore) {
-      return res.status(500).json({ error: "Firebase not configured on server" });
+    const db = getDbOrNull();
+    if (!db) {
+      // لا نكسر الفنكشن، نرجّع خطأ واضح
+      return res.status(500).json({
+        error: "Server misconfigured: FIREBASE_SERVICE_ACCOUNT missing/invalid",
+      });
     }
 
     const md = payment.metadata || {};
@@ -57,7 +69,7 @@ module.exports = async (req, res) => {
       payment.amount && payment.amount.value ? payment.amount.value : "0.00";
     const desc = payment.description || "HAWC booking";
 
-    const bookingRef = firestore.collection("bookings").doc(payment.id);
+    const bookingRef = db.collection("bookings").doc(payment.id);
     const snap = await bookingRef.get();
 
     if (!snap.exists) {
@@ -94,7 +106,10 @@ module.exports = async (req, res) => {
       await bookingRef.update({ emailed: true });
     }
 
-    return res.status(200).json({ id: payment.id, status: payment.status });
+    return res.status(200).json({
+      id: payment.id,
+      status: payment.status,
+    });
   } catch (err) {
     console.error("payment-status error:", err);
     return res.status(500).json({ error: "Failed to fetch payment status" });
