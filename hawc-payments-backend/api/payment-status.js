@@ -13,28 +13,24 @@ const TEST_EMAIL = "intesar.hogent@gmail.com";
 function getDbOrNull() {
   try {
     if (!admin.apps.length) {
-      const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+      const projectId = process.env.FIREBASE_PROJECT_ID;
+      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+      let privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
-      if (!raw) {
-        console.error("FIREBASE_SERVICE_ACCOUNT is missing in environment variables");
-        return null;
-      }
-
-      let serviceAccount;
-      try {
-        serviceAccount = JSON.parse(raw);
-      } catch (err) {
-        console.error("Invalid FIREBASE_SERVICE_ACCOUNT JSON:", err);
+      if (!projectId || !clientEmail || !privateKey) {
+        console.error("Missing Firebase env vars (FIREBASE_PROJECT_ID / FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY)");
         return null;
       }
 
       // ✅ FIX: Vercel often stores the private_key newlines as "\\n"
-      if (serviceAccount.private_key) {
-        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
-      }
+      privateKey = privateKey.replace(/\\n/g, "\n");
 
       admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
+        credential: admin.credential.cert({
+          projectId,
+          clientEmail,
+          privateKey,
+        }),
       });
     }
 
@@ -63,7 +59,7 @@ module.exports = async (req, res) => {
     const db = getDbOrNull();
     if (!db) {
       return res.status(500).json({
-        error: "Server misconfigured: FIREBASE_SERVICE_ACCOUNT missing/invalid",
+        error: "Server misconfigured: Firebase env vars missing/invalid",
       });
     }
 
