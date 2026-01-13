@@ -85,8 +85,9 @@ export default function AdminInvoiceScreen() {
             try {
               await updateDoc(doc(db, "users", userId), { invoiceApproval: status });
               Alert.alert("Success", `Invoice ${status}`);
-            } catch {
-              Alert.alert("Error", "Could not update status");
+            } catch (e) {
+              console.log("updateStatus error:", e);
+              Alert.alert("Error", String(e));
             }
           },
         },
