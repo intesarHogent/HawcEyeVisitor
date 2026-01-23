@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from "react-native";
 import type { ResourceType } from "../types/env";
-import { collection, getDocs, deleteDoc, doc, query, where } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../config/firebaseConfig";
 import { useIsFocused } from "@react-navigation/native";
 
@@ -37,41 +37,26 @@ export default function MyBookingsScreen() {
   useEffect(() => {
     if (!isFocused) return;
 
-    let alive = true;
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      setBookings([]);
+      return;
+    }
 
-    const fetchBookings = async () => {
-      try {
-        const currentUser = auth.currentUser;
-        if (!currentUser) {
-          if (alive) setBookings([]);
-          return;
-        }
+    const q = query(
+      collection(db, "bookings"),
+      where("userId", "==", currentUser.uid)
+    );
 
-        const q = query(
-          collection(db, "bookings"),
-          where("userId", "==", currentUser.uid)
-        );
+    const unsub = onSnapshot(q, (snap) => {
+      const list: Booking[] = snap.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<Booking, "id">),
+      }));
+      setBookings(list);
+    });
 
-        const snap = await getDocs(q);
-
-        const list: Booking[] = snap.docs.map((d) => {
-          const data = d.data() as Omit<Booking, "id">;
-          return {
-            id: d.id,
-            ...data,
-          };
-        });
-
-        if (alive) setBookings(list);
-      } catch (err) {
-        console.log("Firestore bookings error:", err);
-      }
-    };
-
-    fetchBookings();
-    return () => {
-      alive = false;
-    };
+    return () => unsub();
   }, [isFocused]);
 
   const now = Date.now();
@@ -90,15 +75,9 @@ export default function MyBookingsScreen() {
   }, [bookings, now]);
 
   const canCancel = (b: Booking) => {
-    const start = new Date(b.start);
-
-    const todayEndLocal = new Date();
-    todayEndLocal.setHours(23, 59, 59, 999);
-
-    const minAllowed = new Date(todayEndLocal);
-    minAllowed.setDate(minAllowed.getDate() + 1);
-
-    return start.getTime() >= minAllowed.getTime();
+    const start = new Date(b.start).getTime();
+    const now = Date.now();
+    return start - now >= 24 * 60 * 60 * 1000;
   };
 
   const cancelBooking = (id: string) => {
@@ -111,11 +90,11 @@ export default function MyBookingsScreen() {
           text: "Yes, cancel",
           style: "destructive",
           onPress: async () => {
-            setBookings((prev) => prev.filter((x) => x.id !== id));
-            console.log("Canceled booking:", id);
-
             try {
-              await deleteDoc(doc(db, "bookings", id));
+              await fetch(
+                `https://hawc-payments-backend.vercel.app/api/delete-booking?id=${id}`,
+                { method: "DELETE" }
+              );
             } catch (err) {
               console.log("Delete booking error:", err);
             }
